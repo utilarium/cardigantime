@@ -1,10 +1,11 @@
 {
     "name": "@theunwalked/cardigantime",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "cardigantime is a tool to help you time your cardigans.",
-    "main": "dist/cardigantime.cjs",
-    "module": "dist/cardigantime.js",
-    "types": "dist/cardigantime.d.ts",
+    "type": "module",
+    "main": "./dist/cardigantime.cjs",
+    "module": "./dist/cardigantime.js",
+    "types": "./dist/cardigantime.d.ts",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/SemicolonAmbulance/cardigantime.git"
@@ -15,8 +16,14 @@
             "types": "./dist/cardigantime.d.ts",
             "import": "./dist/cardigantime.js",
             "require": "./dist/cardigantime.cjs"
-        }
+        },
+        "./package.json": "./package.json"
     },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
     "scripts": {
         "build": "tsc --noEmit && vite build",
         "start": "dist/main.js",
@@ -42,27 +49,27 @@
         "glob": "^11.0.2",
         "js-yaml": "^4.1.0",
         "winston": "^3.17.0",
-        "zod": "^3.24.4"
+        "zod": "^3.25.34"
     },
     "devDependencies": {
         "@eslint/eslintrc": "^3.3.1",
-        "@eslint/js": "^9.26.0",
+        "@eslint/js": "^9.27.0",
         "@rollup/plugin-replace": "^6.0.2",
-        "@swc/core": "^1.11.24",
+        "@swc/core": "^1.11.29",
         "@types/js-yaml": "^4.0.9",
         "@types/luxon": "^3.6.2",
-        "@types/node": "^22.15.14",
-        "@typescript-eslint/eslint-plugin": "^8.32.0",
-        "@typescript-eslint/parser": "^8.32.0",
-        "eslint": "^9.26.0",
+        "@types/node": "^22.15.24",
+        "@typescript-eslint/eslint-plugin": "^8.33.0",
+        "@typescript-eslint/parser": "^8.33.0",
+        "@vitest/coverage-v8": "^3.1.4",
+        "eslint": "^9.27.0",
         "eslint-plugin-import": "^2.31.0",
-        "globals": "^16.1.0",
-        "vitest": "^3.1.0",
-        "@vitest/coverage-v8": "^3.1.0",
+        "globals": "^16.2.0",
         "typescript": "^5.8.3",
         "vite": "^6.3.5",
-        "vite-plugin-dts": "^4.5.3",
-        "vite-plugin-node": "^5.0.1"
+        "vite-plugin-dts": "^4.5.4",
+        "vite-plugin-node": "^5.0.1",
+        "vitest": "^3.1.4"
     },
     "pnpm": {
         "overrides": {

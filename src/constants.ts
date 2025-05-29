@@ -22,8 +22,8 @@ export const DEFAULT_LOGGER: Logger = {
     warn: console.warn,
     // eslint-disable-next-line no-console
     error: console.error,
-    // eslint-disable-next-line no-console
-    verbose: console.log,
-    // eslint-disable-next-line no-console
-    silly: console.log,
+
+    verbose: () => { },
+
+    silly: () => { },
 }
