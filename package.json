@@ -2,9 +2,10 @@
     "name": "@theunwalked/cardigantime",
     "version": "0.0.1",
     "description": "cardigantime is a tool to help you time your cardigans.",
-    "main": "dist/cardigantime.cjs",
-    "module": "dist/cardigantime.js",
-    "types": "dist/cardigantime.d.ts",
+    "type": "module",
+    "main": "./dist/cardigantime.cjs",
+    "module": "./dist/cardigantime.js",
+    "types": "./dist/cardigantime.d.ts",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/SemicolonAmbulance/cardigantime.git"
@@ -15,8 +16,14 @@
             "types": "./dist/cardigantime.d.ts",
             "import": "./dist/cardigantime.js",
             "require": "./dist/cardigantime.cjs"
-        }
+        },
+        "./package.json": "./package.json"
     },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ],
     "scripts": {
         "build": "tsc --noEmit && vite build",
         "start": "dist/main.js",
