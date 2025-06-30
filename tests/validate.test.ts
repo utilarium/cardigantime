@@ -46,7 +46,7 @@ vi.mock('../src/util/storage', () => ({
 
 // --- Dynamically Import Module Under Test ---
 // Needs to be imported *after* mocks are set up
-const { validate, listZodKeys, checkForExtraKeys } = await import('../src/validate');
+const { validate, listZodKeys, listObjectKeys, checkForExtraKeys } = await import('../src/validate');
 
 // --- Test Suite ---
 
@@ -91,6 +91,43 @@ describe('validate', () => {
 
         await expect(validate(config, options)).resolves.toBeUndefined();
         expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    test('should pass validation when configDirectory is not provided', async () => {
+        const shape = z.object({ port: z.number() });
+        const config = { port: 8080, configDirectory: '.' }; // Add required configDirectory
+        const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
+
+        await expect(validate(config, options)).resolves.toBeUndefined();
+        expect(mockLogger.error).not.toHaveBeenCalled();
+    });
+
+    test('should pass validation when features do not include config', async () => {
+        const shape = z.object({ port: z.number() });
+        const config = { port: 8080, configDirectory: '/config' };
+        const options: Options<typeof shape.shape> = {
+            ...baseOptions,
+            configShape: shape.shape,
+            features: [] // No 'config' feature
+        };
+
+        await expect(validate(config, options)).resolves.toBeUndefined();
+        expect(mockLogger.error).not.toHaveBeenCalled();
+        expect(mockStorageCreate).not.toHaveBeenCalled(); // No config directory validation
+    });
+
+    test('should pass validation with empty config when configDirectory does not exist and isRequired is false', async () => {
+        const config = { configDirectory: '/nonexistent' };
+        const options: Options<any> = {
+            ...baseOptions,
+            configShape: z.object({}).shape, // Fix: provide proper configShape
+            defaults: { ...baseOptions.defaults, isRequired: false }
+        };
+        mockExists.mockResolvedValue(false);
+
+        await expect(validate(config, options)).resolves.toBeUndefined();
+        expect(mockExists).toHaveBeenCalledWith('/nonexistent');
+        expect(mockIsDirectoryReadable).not.toHaveBeenCalled(); // Should not check readability if directory doesn't exist
     });
 
     // --- Extra Keys Check ---
@@ -265,10 +302,231 @@ describe('validate', () => {
             expect(listZodKeys(schema)).toEqual(['a.id', 'a.name', 'b']);
         });
 
+        test('should handle ZodRecord types', () => {
+            const schema = z.object({
+                a: z.record(z.string()),
+                b: z.number()
+            });
+            expect(listZodKeys(schema)).toEqual(['a', 'b']);
+        });
+
+        test('should handle ZodAny types', () => {
+            const schema = z.object({
+                a: z.any(),
+                b: z.number()
+            });
+            expect(listZodKeys(schema)).toEqual(['a', 'b']);
+        });
+
+        test('should handle nested optional and nullable wrappers', () => {
+            const schema = z.object({
+                a: z.string().optional().nullable(),
+                b: z.object({ c: z.number() }).nullable().optional()
+            });
+            expect(listZodKeys(schema)).toEqual(['a', 'b.c']);
+        });
+
+        test('should handle deeply nested objects', () => {
+            const schema = z.object({
+                level1: z.object({
+                    level2: z.object({
+                        level3: z.string()
+                    })
+                })
+            });
+            expect(listZodKeys(schema)).toEqual(['level1.level2.level3']);
+        });
+
         test('should return empty for non-object types', () => {
             expect(listZodKeys(z.string())).toEqual([]);
             expect(listZodKeys(z.number())).toEqual([]);
             expect(listZodKeys(z.boolean())).toEqual([]);
+        });
+
+        test('should handle complex mixed schemas', () => {
+            const schema = z.object({
+                simple: z.string(),
+                optional: z.number().optional(),
+                nullable: z.boolean().nullable(),
+                nested: z.object({
+                    deep: z.string(),
+                    array: z.array(z.object({ item: z.number() }))
+                }),
+                record: z.record(z.string()),
+                any: z.any()
+            });
+            expect(listZodKeys(schema)).toEqual([
+                'simple',
+                'optional',
+                'nullable',
+                'nested.deep',
+                'nested.array.item',
+                'record',
+                'any'
+            ]);
+        });
+    });
+
+    describe('listObjectKeys', () => {
+        test('should list keys for a simple object', () => {
+            const obj = { a: 'string', b: 123 };
+            expect(listObjectKeys(obj)).toEqual(['a', 'b']);
+        });
+
+        test('should list keys for nested objects', () => {
+            const obj = {
+                a: 'string',
+                b: {
+                    c: 'nested',
+                    d: 456
+                }
+            };
+            expect(listObjectKeys(obj)).toEqual(['a', 'b.c', 'b.d']);
+        });
+
+        test('should handle arrays with objects', () => {
+            const obj = {
+                a: 'string',
+                b: [
+                    { id: 1, name: 'first' },
+                    { id: 2, name: 'second' }
+                ]
+            };
+            expect(listObjectKeys(obj)).toEqual(['a', 'b.id', 'b.name']);
+        });
+
+        test('should handle arrays without objects', () => {
+            const obj = {
+                a: 'string',
+                b: [1, 2, 3],
+                c: ['hello', 'world']
+            };
+            expect(listObjectKeys(obj)).toEqual(['a', 'b', 'c']);
+        });
+
+        test('should handle empty arrays', () => {
+            const obj = {
+                a: 'string',
+                b: []
+            };
+            expect(listObjectKeys(obj)).toEqual(['a', 'b']);
+        });
+
+        test('should handle mixed arrays (objects and primitives)', () => {
+            const obj = {
+                a: 'string',
+                b: [
+                    { id: 1 },
+                    'primitive',
+                    123
+                ]
+            };
+            // Should use first object element found
+            expect(listObjectKeys(obj)).toEqual(['a', 'b.id']);
+        });
+
+        test('should handle deeply nested objects', () => {
+            const obj = {
+                level1: {
+                    level2: {
+                        level3: {
+                            deep: 'value'
+                        }
+                    }
+                }
+            };
+            expect(listObjectKeys(obj)).toEqual(['level1.level2.level3.deep']);
+        });
+
+        test('should handle null and undefined values', () => {
+            const obj = {
+                a: 'string',
+                b: null,
+                c: undefined,
+                d: 0,
+                e: false,
+                f: ''
+            };
+            expect(listObjectKeys(obj)).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
+        });
+
+        test('should handle complex nested structures', () => {
+            const obj = {
+                simple: 'value',
+                nested: {
+                    inner: 'innerValue',
+                    array: [
+                        { item: 'first' },
+                        { item: 'second' }
+                    ]
+                },
+                primitiveArray: [1, 2, 3],
+                mixedArray: [
+                    { name: 'object' },
+                    'string',
+                    123
+                ]
+            };
+            expect(listObjectKeys(obj)).toEqual([
+                'simple',
+                'nested.inner',
+                'nested.array.item',
+                'primitiveArray',
+                'mixedArray.name'
+            ]);
+        });
+
+        test('should handle arrays nested in objects nested in arrays', () => {
+            const obj = {
+                items: [
+                    {
+                        metadata: {
+                            tags: ['tag1', 'tag2'],
+                            properties: [
+                                { key: 'prop1', value: 'val1' }
+                            ]
+                        }
+                    }
+                ]
+            };
+            expect(listObjectKeys(obj)).toEqual([
+                'items.metadata.tags',
+                'items.metadata.properties.key',
+                'items.metadata.properties.value'
+            ]);
+        });
+
+        test('should handle objects with non-plain objects (dates, functions, etc)', () => {
+            const obj = {
+                a: 'string',
+                b: new Date(),
+                c: () => { },
+                d: /regex/,
+                e: { nested: 'plain' }
+            };
+            // Non-plain objects (Date, Function, RegExp) are treated as primitives and only their key is listed
+            // Only plain objects get recursed into
+            const result = listObjectKeys(obj);
+            expect(result).toContain('a');     // string primitive
+            expect(result).toContain('c');     // function (treated as primitive)  
+            expect(result).toContain('e.nested'); // plain object (recursed into)
+            // Note: Date and RegExp objects are filtered out by isPlainObject so 'b' and 'd' won't appear
+        });
+
+        test('should handle empty objects', () => {
+            expect(listObjectKeys({})).toEqual([]);
+        });
+
+        test('should deduplicate keys from array processing', () => {
+            const obj = {
+                items: [
+                    { id: 1, name: 'first' },
+                    { id: 2, name: 'second' },
+                    { id: 3, name: 'third' }
+                ]
+            };
+            // All objects have same structure, should not have duplicates
+            expect(listObjectKeys(obj)).toEqual(['items.id', 'items.name']);
         });
     });
 
@@ -311,6 +569,111 @@ describe('validate', () => {
             const config = { a: '1', b: { c: 2 }, e: [{ f: '3' }], extra: true };
             expect(() => checkForExtraKeys(config, complexSchema, logger)).toThrow('Configuration validation failed: Unknown keys found (extra). Check logs for details.');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: extra. Allowed keys are: a, b.c, b.d, e.f'));
+        });
+
+        test('should allow extra keys under ZodRecord types', () => {
+            const recordSchema = z.object({
+                metadata: z.record(z.string()),
+                config: z.object({ port: z.number() })
+            });
+            const config = {
+                metadata: {
+                    'custom.key': 'value',
+                    'another.custom': 'value2'
+                },
+                config: { port: 8080 },
+                'metadata.anykey': 'should be allowed',
+                'metadata.another.deep.key': 'should be allowed'
+            };
+            expect(() => checkForExtraKeys(config, recordSchema, logger)).not.toThrow();
+            expect(logger.error).not.toHaveBeenCalled();
+        });
+
+        test('should allow extra keys under ZodAny types', () => {
+            const anySchema = z.object({
+                dynamic: z.any(),
+                fixed: z.string()
+            });
+            const config = {
+                dynamic: { anything: 'goes' },
+                fixed: 'value',
+                'dynamic.anything': 'should be allowed',
+                'dynamic.deep.nested': 'should be allowed'
+            };
+            expect(() => checkForExtraKeys(config, anySchema, logger)).not.toThrow();
+            expect(logger.error).not.toHaveBeenCalled();
+        });
+
+        test('should handle optional and nullable wrappers around records', () => {
+            const optionalRecordSchema = z.object({
+                optional: z.record(z.string()).optional(),
+                nullable: z.record(z.number()).nullable(),
+                both: z.record(z.boolean()).optional().nullable()
+            });
+            const config = {
+                'optional.custom': 'allowed',
+                'nullable.custom': 123,
+                'both.custom': true
+            };
+            expect(() => checkForExtraKeys(config, optionalRecordSchema, logger)).not.toThrow();
+            expect(logger.error).not.toHaveBeenCalled();
+        });
+
+        test('should handle nested records', () => {
+            const nestedRecordSchema = z.object({
+                level1: z.object({
+                    level2: z.record(z.string())
+                })
+            });
+            const config = {
+                'level1.level2.anykey': 'allowed',
+                'level1.level2.deep.nested': 'allowed'
+            };
+            expect(() => checkForExtraKeys(config, nestedRecordSchema, logger)).not.toThrow();
+            expect(logger.error).not.toHaveBeenCalled();
+        });
+
+        test('should still catch extra keys outside of record prefixes', () => {
+            const mixedSchema = z.object({
+                metadata: z.record(z.string()),
+                config: z.object({ port: z.number() })
+            });
+            const config = {
+                metadata: { custom: 'value' },
+                config: { port: 8080 },
+                'metadata.custom': 'allowed',
+                'config.extraKey': 'not allowed',
+                'topLevel.extra': 'not allowed'
+            };
+            expect(() => checkForExtraKeys(config, mixedSchema, logger)).toThrow('Configuration validation failed: Unknown keys found (config.extraKey, topLevel.extra). Check logs for details.');
+            expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: config.extraKey, topLevel.extra'));
+        });
+
+        test('should handle multiple record types in one schema', () => {
+            const multiRecordSchema = z.object({
+                metadata: z.record(z.string()),
+                data: z.record(z.number()),
+                config: z.object({ port: z.number() })
+            });
+            const config = {
+                'metadata.anything': 'allowed',
+                'data.anything': 123,
+                'config.port': 8080,
+                'config.extra': 'not allowed'
+            };
+            expect(() => checkForExtraKeys(config, multiRecordSchema, logger)).toThrow('Configuration validation failed: Unknown keys found (config.extra). Check logs for details.');
+        });
+
+        test('should use console as fallback logger', () => {
+            const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => { });
+            const config = { known: 'value', extra: 'bad' };
+
+            try {
+                expect(() => checkForExtraKeys(config, schema, console)).toThrow();
+                expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: extra'));
+            } finally {
+                consoleErrorSpy.mockRestore();
+            }
         });
     });
 
