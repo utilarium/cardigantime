@@ -37,6 +37,7 @@ jobs:
           comment-summary-in-pr: on-failure
           # Set reasonable thresholds to reduce noise
           fail-on-severity: moderate
+          config-file: '.github/dependency-review-config.yml'
           fail-on-scopes: runtime
           # Allow common open-source licenses
           allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD
