@@ -27,9 +27,9 @@
     "scripts": {
         "build": "tsc --noEmit && vite build",
         "start": "dist/main.js",
-        "dev": "vite",
+        "dev": "vite build --watch",
         "watch": "vite build --watch",
-        "test": "vitest run",
+        "test": "vitest run --coverage",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "clean": "rm -rf dist",
