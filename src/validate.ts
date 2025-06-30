@@ -11,6 +11,12 @@ export const listZodKeys = (schema: z.ZodTypeAny, prefix = ''): string[] => {
         const unwrappable = schema as z.ZodOptional<any> | z.ZodNullable<any>;
         return listZodKeys(unwrappable.unwrap(), prefix);
     }
+
+    // Handle ZodAny and ZodRecord - these accept any keys, so don't introspect
+    if (schema._def && (schema._def.typeName === 'ZodAny' || schema._def.typeName === 'ZodRecord')) {
+        return prefix ? [prefix] : [];
+    }
+
     if (schema._def && schema._def.typeName === 'ZodArray') {
         // Use type assertion to handle the element property
         const arraySchema = schema as z.ZodArray<any>;
@@ -81,7 +87,47 @@ export const listObjectKeys = (obj: Record<string, unknown>, prefix = ''): strin
 export const checkForExtraKeys = (mergedSources: object, fullSchema: ZodObject<any>, logger: Logger | typeof console): void => {
     const allowedKeys = new Set(listZodKeys(fullSchema));
     const actualKeys = listObjectKeys(mergedSources as Record<string, unknown>);
-    const extraKeys = actualKeys.filter(key => !allowedKeys.has(key));
+
+    // Filter out keys that are under a record type (ZodRecord accepts any keys)
+    const recordPrefixes = new Set<string>();
+
+    // Find all prefixes that are ZodRecord types
+    const findRecordPrefixes = (schema: z.ZodTypeAny, prefix = ''): void => {
+        if (schema._def && (schema._def.typeName === 'ZodOptional' || schema._def.typeName === 'ZodNullable')) {
+            const unwrappable = schema as z.ZodOptional<any> | z.ZodNullable<any>;
+            findRecordPrefixes(unwrappable.unwrap(), prefix);
+            return;
+        }
+
+        if (schema._def && (schema._def.typeName === 'ZodAny' || schema._def.typeName === 'ZodRecord')) {
+            if (prefix) recordPrefixes.add(prefix);
+            return;
+        }
+
+        if (schema._def && schema._def.typeName === 'ZodObject') {
+            const objectSchema = schema as z.ZodObject<any>;
+            Object.entries(objectSchema.shape).forEach(([key, subschema]) => {
+                const fullKey = prefix ? `${prefix}.${key}` : key;
+                findRecordPrefixes(subschema as z.ZodTypeAny, fullKey);
+            });
+        }
+    };
+
+    findRecordPrefixes(fullSchema);
+
+    // Filter out keys that are under record prefixes
+    const extraKeys = actualKeys.filter(key => {
+        if (allowedKeys.has(key)) return false;
+
+        // Check if this key is under a record prefix
+        for (const recordPrefix of recordPrefixes) {
+            if (key.startsWith(recordPrefix + '.')) {
+                return false; // This key is allowed under a record
+            }
+        }
+
+        return true; // This is an extra key
+    });
 
     if (extraKeys.length > 0) {
         const allowedKeysString = Array.from(allowedKeys).join(', ');
@@ -120,8 +166,6 @@ export const validate = async <T extends z.ZodRawShape>(config: z.infer<ZodObjec
         ...ConfigSchema.shape,
         ...options.configShape,
     });
-
-    logger.debug('Full Schema: \n\n%s\n\n', JSON.stringify(listZodKeys(fullSchema), null, 2));
 
     // Validate the merged sources against the full schema
     const validationResult = fullSchema.safeParse(config);
