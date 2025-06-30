@@ -3,6 +3,7 @@ import * as path from 'path';
 import { z, ZodObject } from 'zod';
 import { Args, ConfigSchema, Options } from './types';
 import * as Storage from './util/storage';
+import { loadHierarchicalConfig } from './util/hierarchical';
 
 /**
  * Removes undefined values from an object to create a clean configuration.
@@ -114,7 +115,6 @@ function validateConfigDirectory(configDir: string): string {
  */
 export const read = async <T extends z.ZodRawShape>(args: Args, options: Options<T>): Promise<z.infer<ZodObject<T & typeof ConfigSchema.shape>>> => {
     const logger = options.logger;
-    const storage = Storage.create({ log: logger.debug });
 
     const rawConfigDir = args.configDirectory || options.defaults?.configDirectory;
     if (!rawConfigDir) {
@@ -124,6 +124,78 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
     const resolvedConfigDir = validateConfigDirectory(rawConfigDir);
     logger.debug('Resolved config directory');
 
+    let rawFileConfig: object = {};
+
+    // Check if hierarchical configuration discovery is enabled
+    if (options.features.includes('hierarchical')) {
+        logger.debug('Hierarchical configuration discovery enabled');
+
+        try {
+            // Extract the config directory name from the path for hierarchical discovery
+            const configDirName = path.basename(resolvedConfigDir);
+            const startingDir = path.dirname(resolvedConfigDir);
+
+            logger.debug(`Using hierarchical discovery: configDirName=${configDirName}, startingDir=${startingDir}`);
+
+            const hierarchicalResult = await loadHierarchicalConfig({
+                configDirName,
+                configFileName: options.defaults.configFile,
+                startingDir,
+                encoding: options.defaults.encoding,
+                logger
+            });
+
+            rawFileConfig = hierarchicalResult.config;
+
+            if (hierarchicalResult.discoveredDirs.length > 0) {
+                logger.debug(`Hierarchical discovery found ${hierarchicalResult.discoveredDirs.length} configuration directories`);
+                hierarchicalResult.discoveredDirs.forEach(dir => {
+                    logger.debug(`  Level ${dir.level}: ${dir.path}`);
+                });
+            } else {
+                logger.debug('No configuration directories found in hierarchy');
+            }
+
+            if (hierarchicalResult.errors.length > 0) {
+                hierarchicalResult.errors.forEach(error => logger.warn(`Hierarchical config warning: ${error}`));
+            }
+
+        } catch (error: any) {
+            logger.error('Hierarchical configuration loading failed: ' + (error.message || 'Unknown error'));
+            // Fall back to single directory mode
+            logger.debug('Falling back to single directory configuration loading');
+            rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
+        }
+    } else {
+        // Use traditional single directory configuration loading
+        logger.debug('Using single directory configuration loading');
+        rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
+    }
+
+    const config: z.infer<ZodObject<T & typeof ConfigSchema.shape>> = clean({
+        ...rawFileConfig,
+        ...{
+            configDirectory: resolvedConfigDir,
+        }
+    }) as z.infer<ZodObject<T & typeof ConfigSchema.shape>>;
+
+    return config;
+}
+
+/**
+ * Loads configuration from a single directory (traditional mode).
+ * 
+ * @param resolvedConfigDir - The resolved configuration directory path
+ * @param options - Cardigantime options
+ * @param logger - Logger instance
+ * @returns Promise resolving to the configuration object
+ */
+async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
+    resolvedConfigDir: string,
+    options: Options<T>,
+    logger: any
+): Promise<object> {
+    const storage = Storage.create({ log: logger.debug });
     const configFile = validatePath(options.defaults.configFile, resolvedConfigDir);
     logger.debug('Attempting to load config file for cardigantime');
 
@@ -150,12 +222,5 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
         }
     }
 
-    const config: z.infer<ZodObject<T & typeof ConfigSchema.shape>> = clean({
-        ...rawFileConfig,
-        ...{
-            configDirectory: resolvedConfigDir,
-        }
-    }) as z.infer<ZodObject<T & typeof ConfigSchema.shape>>;
-
-    return config;
+    return rawFileConfig;
 }

@@ -7,8 +7,9 @@ import { z } from "zod";
  * Available features that can be enabled in Cardigantime.
  * Currently supports:
  * - 'config': Configuration file reading and validation
+ * - 'hierarchical': Hierarchical configuration discovery and layering
  */
-export type Feature = 'config';
+export type Feature = 'config' | 'hierarchical';
 
 /**
  * Default configuration options for Cardigantime.

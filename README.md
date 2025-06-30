@@ -240,7 +240,7 @@ debug: true
 Cardigantime merges configuration from multiple sources in this order (highest to lowest priority):
 
 1. **Command-line arguments** (highest priority)
-2. **Configuration file** (medium priority)  
+2. **Configuration file(s)** (medium priority)  
 3. **Default values** (lowest priority)
 
 ```typescript
@@ -255,7 +255,105 @@ Cardigantime merges configuration from multiple sources in this order (highest t
 // debug: false    (from file)
 ```
 
-### 2. Schema Validation
+### 2. Hierarchical Configuration Discovery
+
+Cardigantime supports hierarchical configuration discovery, similar to how tools like `.gitignore`, `.eslintrc`, or `package.json` work. When the `hierarchical` feature is enabled, Cardigantime will:
+
+1. **Start from the specified config directory** (e.g., `./project/subdir/.kodrdriv`)
+2. **Search up the directory tree** for additional config directories with the same name
+3. **Merge configurations** with proper precedence (closer directories win)
+4. **Apply CLI arguments** as the final override
+
+#### Example Directory Structure
+
+```
+/home/user/projects/
+├── .kodrdriv/
+│   └── config.yaml          # Root-level config
+├── myproject/
+│   ├── .kodrdriv/
+│   │   └── config.yaml      # Project-level config  
+│   └── submodule/
+│       ├── .kodrdriv/
+│       │   └── config.yaml  # Submodule-level config
+│       └── my-script.js
+```
+
+#### Hierarchical Discovery Behavior
+
+When running from `/home/user/projects/myproject/submodule/` with hierarchical discovery:
+
+1. **Level 0 (Highest Priority)**: `/home/user/projects/myproject/submodule/.kodrdriv/config.yaml`
+2. **Level 1**: `/home/user/projects/myproject/.kodrdriv/config.yaml`  
+3. **Level 2 (Lowest Priority)**: `/home/user/projects/.kodrdriv/config.yaml`
+
+Configurations are deep-merged, with closer directories taking precedence:
+
+```yaml
+# /home/user/projects/.kodrdriv/config.yaml (Level 2)
+database:
+  host: localhost
+  port: 5432
+  ssl: false
+logging:
+  level: info
+
+# /home/user/projects/myproject/.kodrdriv/config.yaml (Level 1)  
+database:
+  port: 5433
+  ssl: true
+api:
+  timeout: 5000
+
+# /home/user/projects/myproject/submodule/.kodrdriv/config.yaml (Level 0)
+database:
+  host: dev.example.com
+logging:
+  level: debug
+
+# Final merged configuration:
+database:
+  host: dev.example.com    # From Level 0 (highest precedence)
+  port: 5433               # From Level 1  
+  ssl: true                # From Level 1
+api:
+  timeout: 5000            # From Level 1
+logging:
+  level: debug             # From Level 0 (highest precedence)
+```
+
+#### Enabling Hierarchical Discovery
+
+```typescript
+const cardigantime = create({
+  defaults: { 
+    configDirectory: '.kodrdriv',
+    configFile: 'config.yaml'
+  },
+  configShape: MyConfigSchema.shape,
+  features: ['config', 'hierarchical'], // Enable hierarchical discovery
+});
+```
+
+#### Hierarchical Discovery Options
+
+The hierarchical discovery has several built-in protections and features:
+
+- **Maximum traversal depth**: Prevents infinite loops (default: 10 levels)
+- **Symlink protection**: Tracks visited paths to prevent circular references
+- **Graceful fallback**: Falls back to single-directory mode if discovery fails
+- **Error tolerance**: Continues discovery even if some directories are unreadable
+- **Root detection**: Automatically stops at filesystem root
+
+#### Use Cases for Hierarchical Configuration
+
+1. **Monorepos**: Share common configuration across multiple packages
+2. **Project inheritance**: Override team/organization defaults for specific projects  
+3. **Environment layering**: Different configs for development/staging/production
+4. **Tool configuration**: Similar to how ESLint or Prettier find configs up the tree
+5. **Multi-tenant applications**: Tenant-specific overrides of global settings
+
+### 3. Schema Validation
 
 All configuration is validated against your Zod schema:
 
@@ -276,7 +374,7 @@ const cardigantime = create({
 });
 ```
 
-### 3. Type Safety
+### 4. Type Safety
 
 Cardigantime provides full TypeScript support:
 
@@ -293,7 +391,7 @@ if (config.features.includes('auth')) {
 }
 ```
 
-### 4. Error Handling
+### 5. Error Handling
 
 Cardigantime provides detailed error messages for common issues:
 
@@ -364,6 +462,129 @@ Sets a custom logger for debugging and error reporting.
 - `logger`: Logger implementing the Logger interface
 
 ## Advanced Usage
+
+### Hierarchical Configuration Discovery
+
+Here's a complete example of using hierarchical configuration discovery for a monorepo setup:
+
+```typescript
+import { create } from '@theunwalked/cardigantime';
+import { z } from 'zod';
+
+// Define a comprehensive configuration schema
+const ProjectConfigSchema = z.object({
+  projectName: z.string(),
+  environment: z.enum(['development', 'staging', 'production']).default('development'),
+  database: z.object({
+    host: z.string().default('localhost'),
+    port: z.number().default(5432),
+    ssl: z.boolean().default(false),
+    maxConnections: z.number().default(10),
+  }),
+  api: z.object({
+    baseUrl: z.string().url(),
+    timeout: z.number().default(5000),
+    retries: z.number().default(3),
+  }),
+  features: z.record(z.boolean()).default({}),
+  logging: z.object({
+    level: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
+    outputs: z.array(z.string()).default(['console']),
+  }),
+});
+
+// Enable hierarchical discovery
+const cardigantime = create({
+  defaults: {
+    configDirectory: '.myapp',
+    configFile: 'config.yaml',
+  },
+  configShape: ProjectConfigSchema.shape,
+  features: ['config', 'hierarchical'], // Enable hierarchical discovery
+});
+
+// Usage in a CLI tool
+async function setupProject() {
+  try {
+    const config = await cardigantime.read(process.argv);
+    await cardigantime.validate(config);
+    
+    console.log(`Setting up ${config.projectName} in ${config.environment} mode`);
+    console.log(`Database: ${config.database.host}:${config.database.port}`);
+    console.log(`API: ${config.api.baseUrl}`);
+    
+    return config;
+  } catch (error) {
+    console.error('Configuration error:', error.message);
+    process.exit(1);
+  }
+}
+```
+
+**Directory Structure:**
+```
+/workspace/
+├── .myapp/
+│   └── config.yaml              # Global defaults
+├── team-frontend/
+│   ├── .myapp/
+│   │   └── config.yaml          # Team-specific settings
+│   ├── app1/
+│   │   ├── .myapp/
+│   │   │   └── config.yaml      # App-specific overrides
+│   │   └── package.json
+│   └── app2/
+│       └── package.json         # Uses team + global config
+```
+
+**Configuration Files:**
+```yaml
+# /workspace/.myapp/config.yaml (Global)
+database:
+  host: prod.db.company.com
+  ssl: true
+api:
+  baseUrl: https://api.company.com
+logging:
+  level: warn
+  outputs: [console, file]
+
+# /workspace/team-frontend/.myapp/config.yaml (Team)
+database:
+  host: team-frontend.db.company.com
+api:
+  timeout: 3000
+features:
+  analytics: true
+  darkMode: true
+
+# /workspace/team-frontend/app1/.myapp/config.yaml (App)
+projectName: frontend-app1
+environment: development
+database:
+  host: localhost  # Override for local development
+logging:
+  level: debug
+```
+
+When running from `/workspace/team-frontend/app1/`, the final merged configuration will be:
+
+```yaml
+projectName: frontend-app1           # From app level
+environment: development             # From app level  
+database:
+  host: localhost                   # From app level (highest precedence)
+  ssl: true                         # From global level
+api:
+  baseUrl: https://api.company.com  # From global level
+  timeout: 3000                     # From team level
+features:
+  analytics: true                   # From team level
+  darkMode: true                    # From team level
+logging:
+  level: debug                      # From app level (highest precedence)
+  outputs: [console, file]          # From global level
+```
 
 ### Custom Logger
 

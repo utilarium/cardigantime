@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type * as yaml from 'js-yaml';
 import type * as path from 'path';
 import type * as StorageUtil from '../src/util/storage';
+import type * as HierarchicalUtil from '../src/util/hierarchical';
 import { z } from 'zod';
-import { Options } from '../src/types';
+import { Options, Feature } from '../src/types';
 
 // --- Mock Dependencies ---
 
@@ -17,15 +18,21 @@ vi.mock('js-yaml', () => ({
 const mockPathJoin = vi.fn<typeof path.join>();
 const mockPathNormalize = vi.fn<typeof path.normalize>();
 const mockPathIsAbsolute = vi.fn<typeof path.isAbsolute>();
+const mockPathBasename = vi.fn<typeof path.basename>();
+const mockPathDirname = vi.fn<typeof path.dirname>();
 vi.mock('path', () => ({
     join: mockPathJoin,
     normalize: mockPathNormalize,
     isAbsolute: mockPathIsAbsolute,
+    basename: mockPathBasename,
+    dirname: mockPathDirname,
     // Mock other path functions if needed, default is fine for join
     default: {
         join: mockPathJoin,
         normalize: mockPathNormalize,
         isAbsolute: mockPathIsAbsolute,
+        basename: mockPathBasename,
+        dirname: mockPathDirname,
     },
 }));
 
@@ -63,6 +70,12 @@ vi.mock('../src/util/storage', () => ({
     create: mockStorageCreate,
 }));
 
+// Mock hierarchical configuration utility
+const mockLoadHierarchicalConfig = vi.fn<typeof HierarchicalUtil.loadHierarchicalConfig>();
+vi.mock('../src/util/hierarchical', () => ({
+    loadHierarchicalConfig: mockLoadHierarchicalConfig,
+}));
+
 // --- Dynamically Import Module Under Test ---
 // Needs to be imported *after* mocks are set up
 const { read } = await import('../src/read');
@@ -78,8 +91,10 @@ const { read } = await import('../src/read');
  * - Clean function behavior with various data types
  * - Configuration precedence (args vs defaults)
  * - Different encoding support
+ * - Hierarchical configuration discovery and error handling
+ * - Path validation edge cases
  * 
- * Achieves 91.42% line coverage and 90% branch coverage for read.ts
+ * Achieves higher line coverage and branch coverage for read.ts
  */
 describe('read', () => {
     let baseArgs: any; // Use 'any' for simplicity in tests or define a specific mock type
@@ -111,12 +126,51 @@ describe('read', () => {
             configShape: z.object({}), // Add required empty Zod object shape
         };
 
+        // Reset storage mock to default working implementation
+        mockStorageCreate.mockReturnValue({
+            readFile: mockReadFile,
+            // Add other methods if needed, mocked or otherwise
+            // @ts-ignore
+            isDirectoryReadable: vi.fn(),
+            // @ts-ignore
+            isDirectoryWritable: vi.fn(),
+            // @ts-ignore
+            forEachFileIn: vi.fn(),
+            // @ts-ignore
+            writeFile: vi.fn(),
+            // @ts-ignore
+            ensureDir: vi.fn(),
+            // @ts-ignore
+            remove: vi.fn(),
+            // @ts-ignore
+            pathExists: vi.fn(),
+            // @ts-ignore
+            copyFile: vi.fn(),
+            // @ts-ignore
+            moveFile: vi.fn(),
+            // @ts-ignore
+            listFiles: vi.fn(),
+            // @ts-ignore
+            createReadStream: vi.fn(),
+            // @ts-ignore
+            createWriteStream: vi.fn(),
+        });
+
         // Default mock implementations
         mockPathJoin.mockImplementation((...args) => args.join('/')); // Simple join mock
         mockPathNormalize.mockImplementation((p) => p); // Simple normalize mock
         mockPathIsAbsolute.mockReturnValue(false); // Default to relative paths
+        mockPathBasename.mockImplementation((p) => p.split('/').pop() || '');
+        mockPathDirname.mockImplementation((p) => p.split('/').slice(0, -1).join('/') || '.');
         mockYamlLoad.mockReturnValue({ fileKey: 'fileValue' }); // Default valid YAML
         mockReadFile.mockResolvedValue('fileKey: fileValue'); // Default valid file content
+
+        // Default hierarchical mock implementation
+        mockLoadHierarchicalConfig.mockResolvedValue({
+            config: {},
+            discoveredDirs: [],
+            errors: []
+        });
     });
 
     describe('main read function', () => {
@@ -457,6 +511,78 @@ key3: undefined`;
 
             await expect(read(baseArgs, optionsWithAbsolute)).rejects.toThrow('Invalid path: path traversal detected');
         });
+
+        test('should handle path starting with separator in configFile', async () => {
+            mockPathNormalize.mockReturnValue('/config.yaml');
+            mockPathJoin.mockImplementation((base, file) => {
+                if (file.startsWith('/') || file.startsWith('\\')) {
+                    throw new Error('Invalid path: absolute path detected');
+                }
+                return `${base}/${file}`;
+            });
+
+            const optionsWithLeadingSeparator = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configFile: '/config.yaml'
+                }
+            };
+
+            await expect(read(baseArgs, optionsWithLeadingSeparator)).rejects.toThrow('Invalid path: absolute path detected');
+        });
+
+        test('should handle empty path parameters', async () => {
+            mockPathJoin.mockImplementation((base, file) => {
+                if (!file || !base) {
+                    throw new Error('Invalid path parameters');
+                }
+                return `${base}/${file}`;
+            });
+
+            const optionsWithEmptyFile = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configFile: ''
+                }
+            };
+
+            await expect(read(baseArgs, optionsWithEmptyFile)).rejects.toThrow('Invalid path parameters');
+        });
+
+        test('should successfully validate and join valid paths', async () => {
+            // Test the successful path through validatePath
+            const validConfigFile = 'config.yaml';
+            const validConfigDir = '/valid/config/dir';
+            const expectedPath = '/valid/config/dir/config.yaml';
+
+            // Reset mocks and set up proper behavior for successful path validation
+            vi.clearAllMocks();
+            mockPathNormalize.mockImplementation((p) => p); // Just return the path as-is
+            mockPathIsAbsolute.mockReturnValue(false);
+            mockPathJoin.mockImplementation((base, file) => `${base}/${file}`);
+            mockReadFile.mockResolvedValue('key: value');
+            mockYamlLoad.mockReturnValue({ key: 'value' });
+
+            const optionsWithValidPaths = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configFile: validConfigFile
+                }
+            };
+
+            const config = await read({ configDirectory: validConfigDir }, optionsWithValidPaths);
+
+            // The function should successfully join the paths and load the config
+            expect(mockPathJoin).toHaveBeenCalledWith(validConfigDir, validConfigFile);
+            expect(mockReadFile).toHaveBeenCalledWith(expectedPath, 'utf8');
+            expect(config).toEqual({
+                key: 'value',
+                configDirectory: validConfigDir
+            });
+        });
     });
 
     describe('validateConfigDirectory security tests', () => {
@@ -490,6 +616,18 @@ key3: undefined`;
             await read({ configDirectory: configDir }, baseOptions);
 
             expect(mockPathNormalize).toHaveBeenCalledWith(configDir);
+        });
+
+        test('should reject config directory with null/undefined', async () => {
+            const optionsWithNullDefaults = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: null as any
+                }
+            };
+            await expect(read({ configDirectory: null as any }, optionsWithNullDefaults))
+                .rejects.toThrow('Configuration directory must be specified');
         });
     });
 
@@ -569,6 +707,351 @@ key3: undefined`;
             });
 
             await expect(read(baseArgs, baseOptions)).rejects.toThrow('Storage initialization failed');
+        });
+    });
+
+    describe('hierarchical configuration integration', () => {
+        test('should use hierarchical discovery when feature is enabled', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/subdir/.kodrdriv'
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: { api: { timeout: 10000 }, debug: true },
+                discoveredDirs: [
+                    { path: '/project/subdir/.kodrdriv', level: 0 },
+                    { path: '/project/.kodrdriv', level: 1 }
+                ],
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project/subdir');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith('Hierarchical configuration discovery enabled');
+            expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
+                configDirName: '.kodrdriv',
+                configFileName: 'config.yaml',
+                startingDir: '/project/subdir',
+                encoding: 'utf8',
+                logger: mockLogger
+            });
+            expect(config).toEqual({
+                api: { timeout: 10000 },
+                debug: true,
+                configDirectory: '/project/subdir/.kodrdriv'
+            });
+        });
+
+        test('should log hierarchical discovery results with discovered directories', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: { setting: 'value' },
+                discoveredDirs: [
+                    { path: '/project/.kodrdriv', level: 0 },
+                    { path: '/.kodrdriv', level: 1 }
+                ],
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith('Hierarchical discovery found 2 configuration directories');
+            expect(mockLogger.debug).toHaveBeenCalledWith('  Level 0: /project/.kodrdriv');
+            expect(mockLogger.debug).toHaveBeenCalledWith('  Level 1: /.kodrdriv');
+            expect(config).toEqual({
+                setting: 'value',
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should log when no hierarchical directories are found', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: {},
+                discoveredDirs: [],
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith('No configuration directories found in hierarchy');
+            expect(config).toEqual({
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should log hierarchical warnings for errors', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: { key: 'value' },
+                discoveredDirs: [{ path: '/project/.kodrdriv', level: 0 }],
+                errors: [
+                    'Permission denied for /restricted/.kodrdriv',
+                    'Invalid YAML in /other/.kodrdriv/config.yaml'
+                ]
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Permission denied for /restricted/.kodrdriv');
+            expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Invalid YAML in /other/.kodrdriv/config.yaml');
+            expect(config).toEqual({
+                key: 'value',
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should fall back to single directory mode when hierarchical fails', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            // Mock hierarchical failure
+            mockLoadHierarchicalConfig.mockRejectedValue(new Error('Hierarchical discovery failed'));
+
+            // Mock single directory fallback
+            const expectedConfigPath = `${hierarchicalOptions.defaults.configDirectory}/${hierarchicalOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockResolvedValue('fallback: config');
+            mockYamlLoad.mockReturnValue({ fallback: 'config' });
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLogger.error).toHaveBeenCalledWith('Hierarchical configuration loading failed: Hierarchical discovery failed');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Falling back to single directory configuration loading');
+            expect(config).toEqual({
+                fallback: 'config',
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should fall back to single directory mode when hierarchical fails with no message', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            // Mock hierarchical failure with no message
+            mockLoadHierarchicalConfig.mockRejectedValue({ name: 'CustomError' });
+
+            // Mock single directory fallback
+            const expectedConfigPath = `${hierarchicalOptions.defaults.configDirectory}/${hierarchicalOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockResolvedValue('fallback: config');
+            mockYamlLoad.mockReturnValue({ fallback: 'config' });
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLogger.error).toHaveBeenCalledWith('Hierarchical configuration loading failed: Unknown error');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Falling back to single directory configuration loading');
+            expect(config).toEqual({
+                fallback: 'config',
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should use single directory mode when hierarchical feature is not enabled', async () => {
+            const singleDirOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config'] as Feature[], // No hierarchical feature
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const expectedConfigPath = `${singleDirOptions.defaults.configDirectory}/${singleDirOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockResolvedValue('single: directory');
+            mockYamlLoad.mockReturnValue({ single: 'directory' });
+
+            const config = await read(baseArgs, singleDirOptions);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith('Using single directory configuration loading');
+            expect(mockLogger.debug).not.toHaveBeenCalledWith('Hierarchical configuration discovery enabled');
+            expect(mockLoadHierarchicalConfig).not.toHaveBeenCalled();
+            expect(config).toEqual({
+                single: 'directory',
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should handle empty hierarchical discovery results', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            // Mock no discoveries found
+            mockLoadHierarchicalConfig.mockResolvedValue({
+                config: {},
+                discoveredDirs: [],
+                errors: []
+            });
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(config).toEqual({
+                configDirectory: '/project/.kodrdriv'
+            });
+        });
+
+        test('should pass correct parameters to hierarchical discovery', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/complex/nested/path/.kodrdriv',
+                    configFile: 'custom.yaml',
+                    encoding: 'utf16le'
+                }
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue({
+                config: {},
+                discoveredDirs: [],
+                errors: []
+            });
+
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/complex/nested/path');
+
+            await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
+                configDirName: '.kodrdriv',
+                configFileName: 'custom.yaml',
+                startingDir: '/complex/nested/path',
+                encoding: 'utf16le',
+                logger: mockLogger
+            });
+        });
+    });
+
+    describe('additional path and encoding edge cases', () => {
+        test('should handle different file encodings in single directory mode', async () => {
+            const encodings: BufferEncoding[] = ['ascii', 'base64', 'hex', 'latin1'];
+
+            for (const encoding of encodings) {
+                vi.clearAllMocks();
+
+                const customOptions = {
+                    ...baseOptions,
+                    defaults: {
+                        ...baseOptions.defaults,
+                        encoding
+                    }
+                };
+
+                await read(baseArgs, customOptions);
+                expect(mockReadFile).toHaveBeenCalledWith(expect.any(String), encoding);
+            }
+        });
+
+        test('should handle Windows-style path separators in path validation', async () => {
+            mockPathNormalize.mockReturnValue('\\config.yaml');
+            mockPathJoin.mockImplementation((base, file) => {
+                if (file.startsWith('/') || file.startsWith('\\')) {
+                    throw new Error('Invalid path: absolute path detected');
+                }
+                return `${base}/${file}`;
+            });
+
+            const optionsWithBackslash = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configFile: '\\config.yaml'
+                }
+            };
+
+            await expect(read(baseArgs, optionsWithBackslash)).rejects.toThrow('Invalid path: absolute path detected');
+        });
+
+        test('should handle very long but valid config directory paths', async () => {
+            const longPath = 'a'.repeat(999); // Just under the 1000 character limit
+            const config = await read({ configDirectory: longPath }, baseOptions);
+
+            expect(config).toHaveProperty('configDirectory', longPath);
+        });
+
+        test('should handle mixed case in "not found" error detection', async () => {
+            const testCases = [
+                'File Not Found',
+                'NOT found',
+                'No Such File',
+                'not Found in directory'
+            ];
+
+            for (const message of testCases) {
+                vi.clearAllMocks();
+                const error = new Error(message);
+                mockReadFile.mockRejectedValue(error);
+
+                const config = await read(baseArgs, baseOptions);
+
+                expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
+                expect(mockLogger.error).not.toHaveBeenCalled();
+            }
         });
     });
 });
