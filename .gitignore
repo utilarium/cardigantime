@@ -8,3 +8,5 @@ test/
 output/
 input/
 .cardigantime/
+pnpm-workspace.*
+RELEASE_NOTES.md
