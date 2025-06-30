@@ -1,10 +1,14 @@
 verbose: false
 model: gpt-4o
 contextDirectories:
-  - .gitcarve/context
+  - .kodrdriv/context
 commit:
+  add: true
   cached: true
   sendit: true
 release:
   from: main
   to: HEAD
+publish:
+  mergeMethod: squash
+  requiredEnvVars: ["NODE_AUTH_TOKEN"]
