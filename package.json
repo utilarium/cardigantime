@@ -29,11 +29,16 @@
         "start": "dist/main.js",
         "dev": "vite build --watch",
         "watch": "vite build --watch",
-        "test": "vitest run --coverage",
+        "test": "vitest run --coverage && pnpm run docs:test",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "clean": "rm -rf dist",
-        "prepublishOnly": "pnpm run clean && pnpm run build"
+        "prepublishOnly": "pnpm run clean && pnpm run build",
+        "docs:dev": "cd docs && cp ../README.md public/ && pnpm install && pnpm run dev",
+        "docs:build": "cd docs && cp ../README.md public/ && pnpm install && pnpm run build",
+        "docs:preview": "cd docs && pnpm run preview",
+        "docs:test": "cd docs && pnpm install && pnpm run test",
+        "docs:coverage": "cd docs && pnpm install && pnpm run coverage"
     },
     "keywords": [
         "config",

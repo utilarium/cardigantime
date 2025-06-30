@@ -10,3 +10,8 @@ input/
 .cardigantime/
 pnpm-workspace.*
 RELEASE_NOTES.md
+
+# Documentation site build artifacts
+docs/dist/
+docs/node_modules/
+docs/public/README.md

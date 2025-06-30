@@ -5,9 +5,13 @@ export default defineConfig({
         globals: false,
         environment: 'node',
         setupFiles: ['tests/setup.ts'],
+        include: ['tests/**/*.test.ts'],
+        exclude: ['node_modules/**/*', 'docs/**/*'],
         coverage: {
             provider: 'v8',
             reporter: ['text', 'html', 'lcov'],
+            include: ['src/**/*'],
+            exclude: ['docs/**/*', 'node_modules/**/*'],
             thresholds: {
                 statements: 97,
                 branches: 95,

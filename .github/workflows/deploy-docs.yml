@@ -42,124 +42,22 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         
-      - name: Create documentation site
+      - name: Build documentation site
         run: |
-          mkdir -p docs-build
+          # Change to docs directory and install dependencies
+          cd docs
+          pnpm install --frozen-lockfile
           
-          # Create index.html from README
-          cat > docs-build/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Cardigantime Documentation</title>
-              <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.4.0/github-markdown-light.min.css">
-              <style>
-                  body {
-                      font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;
-                      margin: 0;
-                      padding: 2rem;
-                      background: #fafbfc;
-                  }
-                  .container {
-                      max-width: 900px;
-                      margin: 0 auto;
-                      background: white;
-                      padding: 2rem;
-                      border-radius: 8px;
-                      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                  }
-                  .header {
-                      text-align: center;
-                      margin-bottom: 2rem;
-                      padding-bottom: 1rem;
-                      border-bottom: 1px solid #e1e4e8;
-                  }
-                  .nav {
-                      text-align: center;
-                      margin-bottom: 2rem;
-                  }
-                  .nav a {
-                      margin: 0 1rem;
-                      color: #0366d6;
-                      text-decoration: none;
-                  }
-                  .nav a:hover {
-                      text-decoration: underline;
-                  }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="header">
-                      <h1>🧶 Cardigantime</h1>
-                      <p>Robust TypeScript Configuration Management</p>
-                  </div>
-                  
-                  <div class="nav">
-                      <a href="https://github.com/SemicolonAmbulance/cardigantime">GitHub</a>
-                      <a href="https://www.npmjs.com/package/@theunwalked/cardigantime">NPM</a>
-                      <a href="#installation">Installation</a>
-                      <a href="#quick-start">Quick Start</a>
-                      <a href="#api-reference">API Reference</a>
-                  </div>
-                  
-                  <div class="markdown-body">
-          EOF
+          # Copy README.md to public directory so it can be fetched
+          cp ../README.md public/
           
-          # Convert README to HTML and append
-          npx markdown-cli README.md >> docs-build/index.html || {
-              # Fallback: use a simple markdown converter
-              echo '<div><pre>' >> docs-build/index.html
-              cat README.md >> docs-build/index.html
-              echo '</pre></div>' >> docs-build/index.html
-          }
-          
-          cat >> docs-build/index.html << 'EOF'
-                  </div>
-              </div>
-          </body>
-          </html>
-          EOF
-          
-          # Copy any additional assets
-          cp LICENSE docs-build/
-          
-          # Create a simple examples page if needed
-          cat > docs-build/examples.html << 'EOF'
-          <!DOCTYPE html>
-          <html lang="en">
-          <head>
-              <meta charset="UTF-8">
-              <meta name="viewport" content="width=device-width, initial-scale=1.0">
-              <title>Cardigantime Examples</title>
-              <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
-              <style>
-                  body { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif; margin: 2rem; }
-                  .container { max-width: 900px; margin: 0 auto; }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <h1>Cardigantime Examples</h1>
-                  <p><a href="index.html">← Back to Documentation</a></p>
-                  
-                  <h2>Basic CLI Application</h2>
-                  <pre><code class="language-typescript">
-          // Coming soon: Interactive examples and tutorials
-                  </code></pre>
-              </div>
-              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
-              <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-typescript.min.js"></script>
-          </body>
-          </html>
-          EOF
+          # Build the Vite documentation site
+          pnpm run build
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./docs-build
+          path: ./docs/dist
 
   # Deployment job
   deploy:
