@@ -33,7 +33,12 @@ jobs:
         uses: actions/dependency-review-action@v4
         # Commonly enabled options, see https://github.com/actions/dependency-review-action#configuration-options for all available options.
         with:
-          comment-summary-in-pr: always
-        #   fail-on-severity: moderate
-        #   deny-licenses: GPL-1.0-or-later, LGPL-2.0-or-later
-        #   retry-on-snapshot-warnings: true
+          # Only comment on failures to reduce summary size
+          comment-summary-in-pr: on-failure
+          # Set reasonable thresholds to reduce noise
+          fail-on-severity: moderate
+          fail-on-scopes: runtime
+          # Allow common open-source licenses
+          allow-licenses: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, ISC, 0BSD
+          # Retry on snapshot warnings to avoid transient failures
+          retry-on-snapshot-warnings: true
