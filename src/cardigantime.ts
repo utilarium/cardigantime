@@ -52,9 +52,15 @@ export { ArgumentError, ConfigurationError, FileSystemError } from './validate';
  *     pathResolution: {
  *       pathFields: ['contextDirectories'],
  *       resolvePathArray: ['contextDirectories']
+ *     },
+ *     // Configure how array fields are merged in hierarchical mode
+ *     fieldOverlaps: {
+ *       'features': 'append',              // Accumulate features from all levels
+ *       'excludePatterns': 'prepend'       // Higher precedence patterns come first
  *     }
  *   },
  *   configShape: MyConfigSchema.shape,
+ *   features: ['config', 'hierarchical'],   // Enable hierarchical discovery
  * });
  * 
  * // If config file is at ../config/myapp.yaml and contains:

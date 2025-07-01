@@ -233,6 +233,60 @@ debug: true
 ./myapp --debug
 ```
 
+### Advanced Usage Examples
+
+#### Basic Configuration with Path Resolution
+
+```typescript
+import { create } from '@theunwalked/cardigantime';
+import { z } from 'zod';
+
+const MyConfigSchema = z.object({
+  apiKey: z.string().min(1),
+  timeout: z.number().default(5000),
+  debug: z.boolean().default(false),
+  contextDirectories: z.array(z.string()).optional(),
+});
+
+const cardigantime = create({
+  defaults: {
+    configDirectory: './config',
+    configFile: 'myapp.yaml',
+    // Resolve relative paths in contextDirectories relative to config file location
+    pathResolution: {
+      pathFields: ['contextDirectories'],
+      resolvePathArray: ['contextDirectories']
+    }
+  },
+  configShape: MyConfigSchema.shape,
+});
+```
+
+#### Hierarchical Configuration with Custom Array Overlap
+
+```typescript
+const cardigantime = create({
+  defaults: {
+    configDirectory: '.myapp',
+    configFile: 'config.yaml',
+    fieldOverlaps: {
+      'features': 'append',              // Accumulate features from all levels
+      'excludePatterns': 'prepend',      // Higher precedence patterns come first
+      'api.endpoints': 'append',         // Nested field configuration
+      'security.allowedOrigins': 'append' // Security settings accumulate
+    }
+  },
+  configShape: MyConfigSchema.shape,
+  features: ['config', 'hierarchical'],  // Enable hierarchical discovery
+});
+```
+
+This configuration enables powerful composition scenarios where:
+- **Features** from all configuration levels are combined (e.g., base features + project features + local features)
+- **Exclude patterns** are layered with local patterns taking precedence
+- **API endpoints** can be extended at each level
+- **Security settings** accumulate for maximum flexibility
+
 ## Core Concepts
 
 ### 1. Configuration Sources & Precedence
@@ -297,6 +351,9 @@ database:
   ssl: false
 logging:
   level: info
+features:
+  - auth
+  - basic-logging
 
 # /home/user/projects/myproject/.kodrdriv/config.yaml (Level 1)  
 database:
@@ -304,14 +361,19 @@ database:
   ssl: true
 api:
   timeout: 5000
+features:
+  - advanced-logging
+  - metrics
 
 # /home/user/projects/myproject/submodule/.kodrdriv/config.yaml (Level 0)
 database:
   host: dev.example.com
 logging:
   level: debug
+features:
+  - debug-mode
 
-# Final merged configuration:
+# Final merged configuration (with default array behavior):
 database:
   host: dev.example.com    # From Level 0 (highest precedence)
   port: 5433               # From Level 1  
@@ -320,6 +382,79 @@ api:
   timeout: 5000            # From Level 1
 logging:
   level: debug             # From Level 0 (highest precedence)
+features:
+  - debug-mode             # From Level 0 (arrays override by default)
+```
+
+#### Configurable Array Overlap Behavior
+
+By default, arrays in hierarchical configurations follow the **override** behavior - arrays from higher precedence levels completely replace arrays from lower precedence levels. However, you can configure custom overlap behavior for array fields:
+
+```typescript
+const cardigantime = create({
+  defaults: { 
+    configDirectory: '.kodrdriv',
+    configFile: 'config.yaml',
+    fieldOverlaps: {
+      'features': 'append',           // Combine features by appending
+      'excludePatterns': 'prepend',   // Combine exclude patterns by prepending
+      'middlewares': 'override'       // Override middlewares (default behavior)
+    }
+  },
+  configShape: MyConfigSchema.shape,
+  features: ['config', 'hierarchical'],
+});
+```
+
+**Available Overlap Modes:**
+
+- **`override`** (default): Higher precedence arrays completely replace lower precedence arrays
+- **`append`**: Higher precedence array elements are appended to lower precedence arrays  
+- **`prepend`**: Higher precedence array elements are prepended to lower precedence arrays
+
+**Example with Custom Array Overlap:**
+
+```yaml
+# /home/user/projects/.kodrdriv/config.yaml (Level 2)
+features: ['auth', 'basic-logging']
+excludePatterns: ['*.tmp', '*.cache']
+
+# /home/user/projects/myproject/.kodrdriv/config.yaml (Level 1)  
+features: ['advanced-logging', 'metrics']
+excludePatterns: ['*.log']
+
+# /home/user/projects/myproject/submodule/.kodrdriv/config.yaml (Level 0)
+features: ['debug-mode']
+excludePatterns: ['*.debug']
+```
+
+With the configuration above (`features: 'append'`, `excludePatterns: 'prepend'`):
+
+```yaml
+# Final merged configuration:
+features: 
+  - auth              # From Level 2
+  - basic-logging     # From Level 2  
+  - advanced-logging  # From Level 1
+  - metrics           # From Level 1
+  - debug-mode        # From Level 0 (appended)
+excludePatterns:
+  - "*.debug"         # From Level 0 (prepended first)
+  - "*.log"           # From Level 1 (prepended second)  
+  - "*.tmp"           # From Level 2
+  - "*.cache"         # From Level 2
+```
+
+**Nested Field Paths:**
+
+You can configure overlap behavior for nested array fields using dot notation:
+
+```typescript
+fieldOverlaps: {
+  'api.endpoints': 'append',
+  'database.migrations': 'prepend',
+  'config.features.experimental': 'override'
+}
 ```
 
 #### Enabling Hierarchical Discovery
