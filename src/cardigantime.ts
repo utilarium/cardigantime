@@ -26,6 +26,7 @@ export { ArgumentError, ConfigurationError, FileSystemError } from './validate';
  * @param pOptions.defaults.configFile - Name of the configuration file (optional, defaults to 'config.yaml')
  * @param pOptions.defaults.isRequired - Whether the config directory must exist (optional, defaults to false)
  * @param pOptions.defaults.encoding - File encoding for reading config files (optional, defaults to 'utf8')
+ * @param pOptions.defaults.pathResolution - Configuration for resolving relative paths in config values relative to the config file's directory (optional)
  * @param pOptions.features - Array of features to enable (optional, defaults to ['config'])
  * @param pOptions.configShape - Zod schema shape defining your configuration structure (required)
  * @param pOptions.logger - Custom logger implementation (optional, defaults to console logger)
@@ -40,15 +41,25 @@ export { ArgumentError, ConfigurationError, FileSystemError } from './validate';
  *   apiKey: z.string().min(1),
  *   timeout: z.number().default(5000),
  *   debug: z.boolean().default(false),
+ *   contextDirectories: z.array(z.string()).optional(),
  * });
  * 
  * const cardigantime = create({
  *   defaults: {
  *     configDirectory: './config',
  *     configFile: 'myapp.yaml',
+ *     // Resolve relative paths in contextDirectories relative to config file location
+ *     pathResolution: {
+ *       pathFields: ['contextDirectories'],
+ *       resolvePathArray: ['contextDirectories']
+ *     }
  *   },
  *   configShape: MyConfigSchema.shape,
  * });
+ * 
+ * // If config file is at ../config/myapp.yaml and contains:
+ * // contextDirectories: ['./context', './data']
+ * // These paths will be resolved relative to ../config/ directory
  * ```
  */
 export const create = <T extends z.ZodRawShape>(pOptions: {

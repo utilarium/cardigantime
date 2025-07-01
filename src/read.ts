@@ -19,6 +19,89 @@ function clean(obj: any) {
 }
 
 /**
+ * Resolves relative paths in configuration values relative to the configuration file's directory.
+ * 
+ * @param config - The configuration object to process
+ * @param configDir - The directory containing the configuration file
+ * @param pathFields - Array of field names (using dot notation) that contain paths to be resolved
+ * @param resolvePathArray - Array of field names whose array elements should all be resolved as paths
+ * @returns The configuration object with resolved paths
+ */
+function resolveConfigPaths(
+    config: any,
+    configDir: string,
+    pathFields: string[] = [],
+    resolvePathArray: string[] = []
+): any {
+    if (!config || typeof config !== 'object' || pathFields.length === 0) {
+        return config;
+    }
+
+    const resolvedConfig = { ...config };
+
+    for (const fieldPath of pathFields) {
+        const value = getNestedValue(resolvedConfig, fieldPath);
+        if (value !== undefined) {
+            const shouldResolveArrayElements = resolvePathArray.includes(fieldPath);
+            const resolvedValue = resolvePathValue(value, configDir, shouldResolveArrayElements);
+            setNestedValue(resolvedConfig, fieldPath, resolvedValue);
+        }
+    }
+
+    return resolvedConfig;
+}
+
+/**
+ * Gets a nested value from an object using dot notation.
+ */
+function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Sets a nested value in an object using dot notation.
+ */
+function setNestedValue(obj: any, path: string, value: any): void {
+    const keys = path.split('.');
+    const lastKey = keys.pop()!;
+    const target = keys.reduce((current, key) => {
+        if (!(key in current)) {
+            current[key] = {};
+        }
+        return current[key];
+    }, obj);
+    target[lastKey] = value;
+}
+
+/**
+ * Resolves a path value (string or array of strings) relative to the config directory.
+ */
+function resolvePathValue(value: any, configDir: string, resolveArrayElements: boolean): any {
+    if (typeof value === 'string') {
+        return resolveSinglePath(value, configDir);
+    }
+
+    if (Array.isArray(value) && resolveArrayElements) {
+        return value.map(item =>
+            typeof item === 'string' ? resolveSinglePath(item, configDir) : item
+        );
+    }
+
+    return value;
+}
+
+/**
+ * Resolves a single path string relative to the config directory if it's a relative path.
+ */
+function resolveSinglePath(pathStr: string, configDir: string): string {
+    if (!pathStr || path.isAbsolute(pathStr)) {
+        return pathStr;
+    }
+
+    return path.resolve(configDir, pathStr);
+}
+
+/**
  * Validates and secures a user-provided path to prevent path traversal attacks.
  * 
  * Security checks include:
@@ -142,7 +225,9 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
                 configFileName: options.defaults.configFile,
                 startingDir,
                 encoding: options.defaults.encoding,
-                logger
+                logger,
+                pathFields: options.defaults.pathResolution?.pathFields,
+                resolvePathArray: options.defaults.pathResolution?.resolvePathArray
             });
 
             rawFileConfig = hierarchicalResult.config;
@@ -172,8 +257,19 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
         rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
     }
 
+    // Apply path resolution if configured
+    let processedConfig = rawFileConfig;
+    if (options.defaults.pathResolution?.pathFields) {
+        processedConfig = resolveConfigPaths(
+            rawFileConfig,
+            resolvedConfigDir,
+            options.defaults.pathResolution.pathFields,
+            options.defaults.pathResolution.resolvePathArray || []
+        );
+    }
+
     const config: z.infer<ZodObject<T & typeof ConfigSchema.shape>> = clean({
-        ...rawFileConfig,
+        ...processedConfig,
         ...{
             configDirectory: resolvedConfigDir,
         }

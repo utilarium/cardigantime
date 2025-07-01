@@ -20,6 +20,7 @@ export const DEFAULT_OPTIONS: Partial<DefaultOptions> = {
     configFile: DEFAULT_CONFIG_FILE,
     isRequired: false,
     encoding: DEFAULT_ENCODING,
+    pathResolution: undefined, // No path resolution by default
 }
 
 /**

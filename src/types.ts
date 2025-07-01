@@ -12,6 +12,17 @@ import { z } from "zod";
 export type Feature = 'config' | 'hierarchical';
 
 /**
+ * Configuration for resolving relative paths in configuration values.
+ * Paths specified in these fields will be resolved relative to the configuration file's directory.
+ */
+export interface PathResolutionOptions {
+    /** Array of field names (using dot notation) that contain paths to be resolved */
+    pathFields?: string[];
+    /** Array of field names whose array elements should all be resolved as paths */
+    resolvePathArray?: string[];
+}
+
+/**
  * Default configuration options for Cardigantime.
  * These define the basic behavior of configuration loading.
  */
@@ -24,6 +35,8 @@ export interface DefaultOptions {
     isRequired: boolean;
     /** File encoding for reading configuration files (e.g., 'utf8', 'ascii') */
     encoding: string;
+    /** Configuration for resolving relative paths in configuration values */
+    pathResolution?: PathResolutionOptions;
 }
 
 /**

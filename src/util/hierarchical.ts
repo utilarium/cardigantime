@@ -4,6 +4,83 @@ import { create as createStorage } from './storage';
 import { Logger } from '../types';
 
 /**
+ * Resolves relative paths in configuration values relative to the configuration file's directory.
+ */
+function resolveConfigPaths(
+    config: any,
+    configDir: string,
+    pathFields: string[] = [],
+    resolvePathArray: string[] = []
+): any {
+    if (!config || typeof config !== 'object' || pathFields.length === 0) {
+        return config;
+    }
+
+    const resolvedConfig = { ...config };
+
+    for (const fieldPath of pathFields) {
+        const value = getNestedValue(resolvedConfig, fieldPath);
+        if (value !== undefined) {
+            const shouldResolveArrayElements = resolvePathArray.includes(fieldPath);
+            const resolvedValue = resolvePathValue(value, configDir, shouldResolveArrayElements);
+            setNestedValue(resolvedConfig, fieldPath, resolvedValue);
+        }
+    }
+
+    return resolvedConfig;
+}
+
+/**
+ * Gets a nested value from an object using dot notation.
+ */
+function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+}
+
+/**
+ * Sets a nested value in an object using dot notation.
+ */
+function setNestedValue(obj: any, path: string, value: any): void {
+    const keys = path.split('.');
+    const lastKey = keys.pop()!;
+    const target = keys.reduce((current, key) => {
+        if (!(key in current)) {
+            current[key] = {};
+        }
+        return current[key];
+    }, obj);
+    target[lastKey] = value;
+}
+
+/**
+ * Resolves a path value (string or array of strings) relative to the config directory.
+ */
+function resolvePathValue(value: any, configDir: string, resolveArrayElements: boolean): any {
+    if (typeof value === 'string') {
+        return resolveSinglePath(value, configDir);
+    }
+
+    if (Array.isArray(value) && resolveArrayElements) {
+        return value.map(item =>
+            typeof item === 'string' ? resolveSinglePath(item, configDir) : item
+        );
+    }
+
+    return value;
+}
+
+/**
+ * Resolves a single path string relative to the config directory if it's a relative path.
+ */
+function resolveSinglePath(pathStr: string, configDir: string): string {
+    if (!pathStr || path.isAbsolute(pathStr)) {
+        return pathStr;
+    }
+
+    return path.resolve(configDir, pathStr);
+}
+
+/**
  * Represents a discovered configuration directory with its path and precedence level.
  */
 export interface DiscoveredConfigDir {
@@ -29,6 +106,10 @@ export interface HierarchicalDiscoveryOptions {
     encoding?: string;
     /** Logger for debugging */
     logger?: Logger;
+    /** Array of field names that contain paths to be resolved */
+    pathFields?: string[];
+    /** Array of field names whose array elements should all be resolved as paths */
+    resolvePathArray?: string[];
 }
 
 /**
@@ -139,13 +220,17 @@ export async function discoverConfigDirectories(
  * @param configFileName Name of the configuration file
  * @param encoding File encoding
  * @param logger Optional logger
+ * @param pathFields Optional array of field names that contain paths to be resolved
+ * @param resolvePathArray Optional array of field names whose array elements should all be resolved as paths
  * @returns Promise resolving to parsed configuration object or null if not found
  */
 export async function loadConfigFromDirectory(
     configDir: string,
     configFileName: string,
     encoding: string = 'utf8',
-    logger?: Logger
+    logger?: Logger,
+    pathFields?: string[],
+    resolvePathArray?: string[]
 ): Promise<object | null> {
     const storage = createStorage({ log: logger?.debug || (() => { }) });
     const configFilePath = path.join(configDir, configFileName);
@@ -169,8 +254,15 @@ export async function loadConfigFromDirectory(
         const parsedYaml = yaml.load(yamlContent);
 
         if (parsedYaml !== null && typeof parsedYaml === 'object') {
+            let config = parsedYaml as object;
+
+            // Apply path resolution if configured
+            if (pathFields && pathFields.length > 0) {
+                config = resolveConfigPaths(config, configDir, pathFields, resolvePathArray || []);
+            }
+
             logger?.verbose(`Successfully loaded config from: ${configFilePath}`);
-            return parsedYaml as object;
+            return config;
         } else {
             logger?.debug(`Config file contains invalid format: ${configFilePath}`);
             return null;
@@ -291,7 +383,7 @@ function deepMergeTwo(target: any, source: any): any {
 export async function loadHierarchicalConfig(
     options: HierarchicalDiscoveryOptions
 ): Promise<HierarchicalConfigResult> {
-    const { configFileName, encoding = 'utf8', logger } = options;
+    const { configFileName, encoding = 'utf8', logger, pathFields, resolvePathArray } = options;
 
     logger?.verbose('Starting hierarchical configuration loading');
 
@@ -320,7 +412,9 @@ export async function loadHierarchicalConfig(
                 dir.path,
                 configFileName,
                 encoding,
-                logger
+                logger,
+                pathFields,
+                resolvePathArray
             );
 
             if (config !== null) {
