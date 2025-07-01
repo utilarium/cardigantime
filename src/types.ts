@@ -12,6 +12,32 @@ import { z } from "zod";
 export type Feature = 'config' | 'hierarchical';
 
 /**
+ * Defines how array fields should be merged in hierarchical configurations.
+ * 
+ * - 'override': Higher precedence arrays completely replace lower precedence arrays (default)
+ * - 'append': Higher precedence array elements are appended to lower precedence arrays
+ * - 'prepend': Higher precedence array elements are prepended to lower precedence arrays
+ */
+export type ArrayOverlapMode = 'override' | 'append' | 'prepend';
+
+/**
+ * Configuration for how fields should be merged in hierarchical configurations.
+ * Maps field names (using dot notation) to their overlap behavior.
+ * 
+ * @example
+ * ```typescript
+ * const fieldOverlaps: FieldOverlapOptions = {
+ *   'features': 'append',           // features arrays will be combined by appending
+ *   'api.endpoints': 'prepend',     // nested endpoint arrays will be combined by prepending
+ *   'excludePatterns': 'override'   // excludePatterns arrays will replace each other (default behavior)
+ * };
+ * ```
+ */
+export interface FieldOverlapOptions {
+    [fieldPath: string]: ArrayOverlapMode;
+}
+
+/**
  * Configuration for resolving relative paths in configuration values.
  * Paths specified in these fields will be resolved relative to the configuration file's directory.
  */
@@ -37,6 +63,12 @@ export interface DefaultOptions {
     encoding: string;
     /** Configuration for resolving relative paths in configuration values */
     pathResolution?: PathResolutionOptions;
+    /** 
+     * Configuration for how array fields should be merged in hierarchical mode.
+     * Only applies when the 'hierarchical' feature is enabled.
+     * If not specified, all arrays use 'override' behavior (default).
+     */
+    fieldOverlaps?: FieldOverlapOptions;
 }
 
 /**

@@ -803,6 +803,100 @@ key3: undefined`;
             });
         });
 
+        test('should pass fieldOverlaps configuration to hierarchical loading', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/subdir/.kodrdriv',
+                    fieldOverlaps: {
+                        'features': 'append',
+                        'excludePatterns': 'prepend'
+                    }
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: {
+                    features: ['auth', 'logging', 'analytics'],  // append mode applied
+                    excludePatterns: ['*.log', '*.tmp'],         // prepend mode applied
+                    api: { timeout: 5000 }
+                },
+                discoveredDirs: [
+                    { path: '/project/subdir/.kodrdriv', level: 0 },
+                    { path: '/project/.kodrdriv', level: 1 }
+                ],
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project/subdir');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
+                configDirName: '.kodrdriv',
+                configFileName: 'config.yaml',
+                startingDir: '/project/subdir',
+                encoding: 'utf8',
+                logger: mockLogger,
+                fieldOverlaps: {
+                    'features': 'append',
+                    'excludePatterns': 'prepend'
+                }
+            });
+
+            expect(config).toEqual({
+                features: ['auth', 'logging', 'analytics'],
+                excludePatterns: ['*.log', '*.tmp'],
+                api: { timeout: 5000 },
+                configDirectory: '/project/subdir/.kodrdriv'
+            });
+        });
+
+        test('should work when fieldOverlaps is undefined', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/subdir/.kodrdriv'
+                    // fieldOverlaps is undefined - should work fine
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: { api: { timeout: 10000 }, debug: true },
+                discoveredDirs: [
+                    { path: '/project/subdir/.kodrdriv', level: 0 }
+                ],
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project/subdir');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
+                configDirName: '.kodrdriv',
+                configFileName: 'config.yaml',
+                startingDir: '/project/subdir',
+                encoding: 'utf8',
+                logger: mockLogger,
+                fieldOverlaps: undefined
+            });
+
+            expect(config).toEqual({
+                api: { timeout: 10000 },
+                debug: true,
+                configDirectory: '/project/subdir/.kodrdriv'
+            });
+        });
+
         test('should log hierarchical discovery results with discovered directories', async () => {
             const hierarchicalOptions: Options<any> = {
                 ...baseOptions,

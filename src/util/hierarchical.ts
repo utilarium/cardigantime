@@ -1,7 +1,7 @@
 import path from 'path';
 import * as yaml from 'js-yaml';
 import { create as createStorage } from './storage';
-import { Logger } from '../types';
+import { Logger, FieldOverlapOptions, ArrayOverlapMode } from '../types';
 
 /**
  * Resolves relative paths in configuration values relative to the configuration file's directory.
@@ -110,6 +110,8 @@ export interface HierarchicalDiscoveryOptions {
     pathFields?: string[];
     /** Array of field names whose array elements should all be resolved as paths */
     resolvePathArray?: string[];
+    /** Configuration for how array fields should be merged in hierarchical mode */
+    fieldOverlaps?: FieldOverlapOptions;
 }
 
 /**
@@ -274,25 +276,27 @@ export async function loadConfigFromDirectory(
 }
 
 /**
- * Deep merges multiple configuration objects with proper precedence.
+ * Deep merges multiple configuration objects with proper precedence and configurable array overlap behavior.
  * 
  * Objects are merged from lowest precedence to highest precedence,
  * meaning that properties in later objects override properties in earlier objects.
- * Arrays are replaced entirely (not merged).
+ * Arrays can be merged using different strategies based on the fieldOverlaps configuration.
  * 
  * @param configs Array of configuration objects, ordered from lowest to highest precedence
+ * @param fieldOverlaps Configuration for how array fields should be merged (optional)
  * @returns Merged configuration object
  * 
  * @example
  * ```typescript
  * const merged = deepMergeConfigs([
- *   { api: { timeout: 5000 }, debug: true },        // Lower precedence
- *   { api: { retries: 3 }, features: ['auth'] },    // Higher precedence
- * ]);
- * // Result: { api: { timeout: 5000, retries: 3 }, debug: true, features: ['auth'] }
+ *   { api: { timeout: 5000 }, features: ['auth'] },        // Lower precedence
+ *   { api: { retries: 3 }, features: ['analytics'] },      // Higher precedence
+ * ], {
+ *   'features': 'append'  // Results in features: ['auth', 'analytics']
+ * });
  * ```
  */
-export function deepMergeConfigs(configs: object[]): object {
+export function deepMergeConfigs(configs: object[], fieldOverlaps?: FieldOverlapOptions): object {
     if (configs.length === 0) {
         return {};
     }
@@ -302,18 +306,20 @@ export function deepMergeConfigs(configs: object[]): object {
     }
 
     return configs.reduce((merged, current) => {
-        return deepMergeTwo(merged, current);
+        return deepMergeTwo(merged, current, fieldOverlaps);
     }, {});
 }
 
 /**
- * Deep merges two objects with proper precedence.
+ * Deep merges two objects with proper precedence and configurable array overlap behavior.
  * 
  * @param target Target object (lower precedence)
  * @param source Source object (higher precedence)
+ * @param fieldOverlaps Configuration for how array fields should be merged (optional)
+ * @param currentPath Current field path for nested merging (used internally)
  * @returns Merged object
  */
-function deepMergeTwo(target: any, source: any): any {
+function deepMergeTwo(target: any, source: any, fieldOverlaps?: FieldOverlapOptions, currentPath: string = ''): any {
     // Handle null/undefined
     if (source == null) return target;
     if (target == null) return source;
@@ -323,9 +329,15 @@ function deepMergeTwo(target: any, source: any): any {
         return source; // Source takes precedence
     }
 
-    // Handle arrays - replace entirely, don't merge
+    // Handle arrays with configurable overlap behavior
     if (Array.isArray(source)) {
-        return [...source];
+        if (Array.isArray(target) && fieldOverlaps) {
+            const overlapMode = getOverlapModeForPath(currentPath, fieldOverlaps);
+            return mergeArrays(target, source, overlapMode);
+        } else {
+            // Default behavior: replace entirely
+            return [...source];
+        }
     }
 
     if (Array.isArray(target)) {
@@ -337,21 +349,75 @@ function deepMergeTwo(target: any, source: any): any {
 
     for (const key in source) {
         if (Object.prototype.hasOwnProperty.call(source, key)) {
+            const fieldPath = currentPath ? `${currentPath}.${key}` : key;
+
             if (Object.prototype.hasOwnProperty.call(result, key) &&
                 typeof result[key] === 'object' &&
                 typeof source[key] === 'object' &&
                 !Array.isArray(source[key]) &&
                 !Array.isArray(result[key])) {
                 // Recursively merge nested objects
-                result[key] = deepMergeTwo(result[key], source[key]);
+                result[key] = deepMergeTwo(result[key], source[key], fieldOverlaps, fieldPath);
             } else {
-                // Replace with source value (higher precedence)
-                result[key] = source[key];
+                // Handle arrays and primitives with overlap consideration
+                if (Array.isArray(source[key]) && Array.isArray(result[key]) && fieldOverlaps) {
+                    const overlapMode = getOverlapModeForPath(fieldPath, fieldOverlaps);
+                    result[key] = mergeArrays(result[key], source[key], overlapMode);
+                } else {
+                    // Replace with source value (higher precedence)
+                    result[key] = source[key];
+                }
             }
         }
     }
 
     return result;
+}
+
+/**
+ * Determines the overlap mode for a given field path.
+ * 
+ * @param fieldPath The current field path (dot notation)
+ * @param fieldOverlaps Configuration mapping field paths to overlap modes
+ * @returns The overlap mode to use for this field path
+ */
+function getOverlapModeForPath(fieldPath: string, fieldOverlaps: FieldOverlapOptions): ArrayOverlapMode {
+    // Check for exact match first
+    if (fieldPath in fieldOverlaps) {
+        return fieldOverlaps[fieldPath];
+    }
+
+    // Check for any parent path matches (for nested configurations)
+    const pathParts = fieldPath.split('.');
+    for (let i = pathParts.length - 1; i > 0; i--) {
+        const parentPath = pathParts.slice(0, i).join('.');
+        if (parentPath in fieldOverlaps) {
+            return fieldOverlaps[parentPath];
+        }
+    }
+
+    // Default to override if no specific configuration found
+    return 'override';
+}
+
+/**
+ * Merges two arrays based on the specified overlap mode.
+ * 
+ * @param targetArray The lower precedence array
+ * @param sourceArray The higher precedence array
+ * @param mode The overlap mode to use
+ * @returns The merged array
+ */
+function mergeArrays(targetArray: any[], sourceArray: any[], mode: ArrayOverlapMode): any[] {
+    switch (mode) {
+        case 'append':
+            return [...targetArray, ...sourceArray];
+        case 'prepend':
+            return [...sourceArray, ...targetArray];
+        case 'override':
+        default:
+            return [...sourceArray];
+    }
 }
 
 /**
@@ -372,10 +438,14 @@ function deepMergeTwo(target: any, source: any): any {
  *   configDirName: '.kodrdriv',
  *   configFileName: 'config.yaml',
  *   startingDir: '/project/subdir',
- *   maxLevels: 5
+ *   maxLevels: 5,
+ *   fieldOverlaps: {
+ *     'features': 'append',
+ *     'excludePatterns': 'prepend'
+ *   }
  * });
  * 
- * // result.config contains merged configuration
+ * // result.config contains merged configuration with custom array merging
  * // result.discoveredDirs shows where configs were found
  * // result.errors contains any non-fatal errors
  * ```
@@ -383,7 +453,7 @@ function deepMergeTwo(target: any, source: any): any {
 export async function loadHierarchicalConfig(
     options: HierarchicalDiscoveryOptions
 ): Promise<HierarchicalConfigResult> {
-    const { configFileName, encoding = 'utf8', logger, pathFields, resolvePathArray } = options;
+    const { configFileName, encoding = 'utf8', logger, pathFields, resolvePathArray, fieldOverlaps } = options;
 
     logger?.verbose('Starting hierarchical configuration loading');
 
@@ -430,8 +500,8 @@ export async function loadHierarchicalConfig(
         }
     }
 
-    // Merge all configurations with proper precedence
-    const mergedConfig = deepMergeConfigs(configs);
+    // Merge all configurations with proper precedence and configurable array overlap
+    const mergedConfig = deepMergeConfigs(configs, fieldOverlaps);
 
     logger?.verbose(`Hierarchical loading complete. Merged ${configs.length} configurations`);
 

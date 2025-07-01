@@ -1254,8 +1254,6 @@ environment: production
             expect(result.errors).toEqual([]);
         });
 
-
-
         test('should work without logger', async () => {
             const options: HierarchicalDiscoveryOptions = {
                 configDirName: '.kodrdriv',
@@ -1596,6 +1594,377 @@ environment: production
             // and spreads their enumerable properties, losing the prototype chain
             expect(result).toEqual({ instance: { value: 'test2' } });
             expect((result as any).instance).not.toBeInstanceOf(CustomClass);
+        });
+    });
+
+    describe('deepMergeConfigs - configurable array overlap modes', () => {
+        describe('override mode (default behavior)', () => {
+            test('should replace arrays when no fieldOverlaps specified', () => {
+                const configs = [
+                    { features: ['auth', 'logging'] },
+                    { features: ['analytics'] }
+                ];
+
+                const result = deepMergeConfigs(configs);
+
+                expect(result).toEqual({
+                    features: ['analytics']
+                });
+            });
+
+            test('should replace arrays when explicitly configured as override', () => {
+                const configs = [
+                    { features: ['auth', 'logging'] },
+                    { features: ['analytics'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { features: 'override' });
+
+                expect(result).toEqual({
+                    features: ['analytics']
+                });
+            });
+        });
+
+        describe('append mode', () => {
+            test('should append arrays when configured as append', () => {
+                const configs = [
+                    { features: ['auth', 'logging'] },
+                    { features: ['analytics'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { features: 'append' });
+
+                expect(result).toEqual({
+                    features: ['auth', 'logging', 'analytics']
+                });
+            });
+
+            test('should handle multiple configs with append mode', () => {
+                const configs = [
+                    { plugins: ['plugin1'] },
+                    { plugins: ['plugin2', 'plugin3'] },
+                    { plugins: ['plugin4'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { plugins: 'append' });
+
+                expect(result).toEqual({
+                    plugins: ['plugin1', 'plugin2', 'plugin3', 'plugin4']
+                });
+            });
+
+            test('should handle empty arrays in append mode', () => {
+                const configs = [
+                    { items: [] },
+                    { items: ['item1', 'item2'] },
+                    { items: [] },
+                    { items: ['item3'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { items: 'append' });
+
+                expect(result).toEqual({
+                    items: ['item1', 'item2', 'item3']
+                });
+            });
+        });
+
+        describe('prepend mode', () => {
+            test('should prepend arrays when configured as prepend', () => {
+                const configs = [
+                    { middlewares: ['cors', 'auth'] },
+                    { middlewares: ['logging'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { middlewares: 'prepend' });
+
+                expect(result).toEqual({
+                    middlewares: ['logging', 'cors', 'auth']
+                });
+            });
+
+            test('should handle multiple configs with prepend mode', () => {
+                const configs = [
+                    { order: ['third'] },
+                    { order: ['second'] },
+                    { order: ['first'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { order: 'prepend' });
+
+                expect(result).toEqual({
+                    order: ['first', 'second', 'third']
+                });
+            });
+        });
+
+        describe('nested field paths', () => {
+            test('should handle nested array fields with dot notation', () => {
+                const configs = [
+                    { api: { endpoints: ['users', 'auth'] } },
+                    { api: { endpoints: ['admin'] } }
+                ];
+
+                const result = deepMergeConfigs(configs, { 'api.endpoints': 'append' });
+
+                expect(result).toEqual({
+                    api: { endpoints: ['users', 'auth', 'admin'] }
+                });
+            });
+
+            test('should handle deeply nested paths', () => {
+                const configs = [
+                    { config: { database: { migrations: ['001', '002'] } } },
+                    { config: { database: { migrations: ['003'] } } }
+                ];
+
+                const result = deepMergeConfigs(configs, { 'config.database.migrations': 'prepend' });
+
+                expect(result).toEqual({
+                    config: { database: { migrations: ['003', '001', '002'] } }
+                });
+            });
+        });
+
+        describe('mixed configurations', () => {
+            test('should apply different overlap modes to different fields', () => {
+                const configs = [
+                    {
+                        features: ['auth'],
+                        plugins: ['basic'],
+                        excludes: ['temp']
+                    },
+                    {
+                        features: ['analytics'],
+                        plugins: ['advanced'],
+                        excludes: ['cache']
+                    }
+                ];
+
+                const result = deepMergeConfigs(configs, {
+                    features: 'append',
+                    plugins: 'prepend',
+                    excludes: 'override'
+                });
+
+                expect(result).toEqual({
+                    features: ['auth', 'analytics'],     // appended
+                    plugins: ['advanced', 'basic'],     // prepended
+                    excludes: ['cache']                  // overridden
+                });
+            });
+
+            test('should use default override for unconfigured fields', () => {
+                const configs = [
+                    {
+                        configured: ['a'],
+                        unconfigured: ['x']
+                    },
+                    {
+                        configured: ['b'],
+                        unconfigured: ['y']
+                    }
+                ];
+
+                const result = deepMergeConfigs(configs, {
+                    configured: 'append'
+                    // unconfigured field will use default override
+                });
+
+                expect(result).toEqual({
+                    configured: ['a', 'b'],
+                    unconfigured: ['y']  // default override behavior
+                });
+            });
+        });
+
+        describe('edge cases with configurable overlap', () => {
+            test('should handle null and undefined values in arrays', () => {
+                const configs = [
+                    { items: ['a', null, 'b'] },
+                    { items: [undefined, 'c'] }
+                ];
+
+                const result = deepMergeConfigs(configs, { items: 'append' });
+
+                expect(result).toEqual({
+                    items: ['a', null, 'b', undefined, 'c']
+                });
+            });
+
+            test('should handle mixed types in arrays', () => {
+                const configs = [
+                    { mixed: [1, 'string', true] },
+                    { mixed: [{ obj: 'value' }, [1, 2]] }
+                ];
+
+                const result = deepMergeConfigs(configs, { mixed: 'prepend' });
+
+                expect(result).toEqual({
+                    mixed: [{ obj: 'value' }, [1, 2], 1, 'string', true]
+                });
+            });
+
+            test('should handle array overlapping with non-array values', () => {
+                const configs = [
+                    { value: ['array'] },
+                    { value: 'string' }
+                ];
+
+                // When source is not an array, it should replace regardless of overlap mode
+                const result = deepMergeConfigs(configs, { value: 'append' });
+
+                expect(result).toEqual({
+                    value: 'string'
+                });
+            });
+
+            test('should handle non-array overlapping with array values', () => {
+                const configs = [
+                    { value: 'string' },
+                    { value: ['array'] }
+                ];
+
+                // When target is not an array, source should replace
+                const result = deepMergeConfigs(configs, { value: 'append' });
+
+                expect(result).toEqual({
+                    value: ['array']
+                });
+            });
+        });
+
+        describe('parent path inheritance', () => {
+            test('should inherit overlap mode from parent path', () => {
+                const configs = [
+                    { api: { v1: { endpoints: ['users'] }, v2: { endpoints: ['posts'] } } },
+                    { api: { v1: { endpoints: ['auth'] }, v2: { endpoints: ['comments'] } } }
+                ];
+
+                // Configure parent path - should apply to all nested endpoints
+                const result = deepMergeConfigs(configs, { 'api': 'append' });
+
+                // Note: This tests the current implementation, but parent path inheritance 
+                // might need to be more specific to array fields only
+                expect(result).toEqual({
+                    api: {
+                        v1: { endpoints: ['users', 'auth'] },
+                        v2: { endpoints: ['posts', 'comments'] }
+                    }
+                });
+            });
+        });
+    });
+
+    describe('loadHierarchicalConfig - with field overlaps', () => {
+        test('should apply field overlaps during hierarchical loading', async () => {
+            const options: HierarchicalDiscoveryOptions = {
+                configDirName: '.kodrdriv',
+                configFileName: 'config.yaml',
+                startingDir: '/project/subdir',
+                logger: mockLogger,
+                fieldOverlaps: {
+                    'features': 'append',
+                    'excludePatterns': 'prepend'
+                }
+            };
+
+            // Mock directory discovery to find both directories
+            mockStorage.exists
+                .mockResolvedValueOnce(true)    // subdir/.kodrdriv exists
+                .mockResolvedValueOnce(true)    // project/.kodrdriv exists  
+                .mockResolvedValueOnce(false);  // parent directory doesn't exist
+
+            mockStorage.isDirectoryReadable
+                .mockResolvedValueOnce(true)    // subdir/.kodrdriv readable
+                .mockResolvedValueOnce(true);   // project/.kodrdriv readable
+
+            // Mock file existence and readability for config files
+            mockStorage.exists
+                .mockResolvedValueOnce(true)    // config file exists in subdir
+                .mockResolvedValueOnce(true);   // config file exists in project
+
+            mockStorage.isFileReadable
+                .mockResolvedValueOnce(true)    // config file readable in subdir
+                .mockResolvedValueOnce(true);   // config file readable in project
+
+            // Mock YAML content with array fields
+            mockStorage.readFile
+                .mockResolvedValueOnce('features:\n  - auth\n  - logging\nexcludePatterns:\n  - "*.tmp"')  // Level 1 (lower precedence)
+                .mockResolvedValueOnce('features:\n  - analytics\nexcludePatterns:\n  - "*.log"');        // Level 0 (higher precedence)
+
+            mockYamlLoad
+                .mockReturnValueOnce({ features: ['auth', 'logging'], excludePatterns: ['*.tmp'] })    // Level 1
+                .mockReturnValueOnce({ features: ['analytics'], excludePatterns: ['*.log'] });         // Level 0
+
+            // Mock path functions
+            mockPathDirname
+                .mockReturnValueOnce('/project')     // From /project/subdir
+                .mockReturnValueOnce('/');           // From /project
+
+            const result = await loadHierarchicalConfig(options);
+
+            expect(result.config).toEqual({
+                features: ['auth', 'logging', 'analytics'],  // append mode
+                excludePatterns: ['*.log', '*.tmp']          // prepend mode
+            });
+
+            expect(result.discoveredDirs).toEqual([
+                { path: '/project/subdir/.kodrdriv', level: 0 },
+                { path: '/project/.kodrdriv', level: 1 }
+            ]);
+
+            expect(result.errors).toEqual([]);
+        });
+
+        test('should work with hierarchical loading when no fieldOverlaps configured', async () => {
+            const options: HierarchicalDiscoveryOptions = {
+                configDirName: '.kodrdriv',
+                configFileName: 'config.yaml',
+                startingDir: '/project/subdir',
+                logger: mockLogger
+                // No fieldOverlaps - should use default override behavior
+            };
+
+            // Mock directory discovery
+            mockStorage.exists
+                .mockResolvedValueOnce(true)    // subdir/.kodrdriv exists
+                .mockResolvedValueOnce(true)    // project/.kodrdriv exists
+                .mockResolvedValueOnce(false);  // parent directory doesn't exist
+
+            mockStorage.isDirectoryReadable
+                .mockResolvedValueOnce(true)    // subdir/.kodrdriv readable
+                .mockResolvedValueOnce(true);   // project/.kodrdriv readable
+
+            // Mock file existence and readability for config files
+            mockStorage.exists
+                .mockResolvedValueOnce(true)    // config file exists in subdir
+                .mockResolvedValueOnce(true);   // config file exists in project
+
+            mockStorage.isFileReadable
+                .mockResolvedValueOnce(true)    // config file readable in subdir
+                .mockResolvedValueOnce(true);   // config file readable in project
+
+            mockStorage.readFile
+                .mockResolvedValueOnce('features:\n  - auth\n  - logging')  // Level 1
+                .mockResolvedValueOnce('features:\n  - analytics');         // Level 0
+
+            mockYamlLoad
+                .mockReturnValueOnce({ features: ['auth', 'logging'] })     // Level 1
+                .mockReturnValueOnce({ features: ['analytics'] });          // Level 0
+
+            // Mock path functions
+            mockPathDirname
+                .mockReturnValueOnce('/project')     // From /project/subdir
+                .mockReturnValueOnce('/');           // From /project
+
+            const result = await loadHierarchicalConfig(options);
+
+            // Should use default override behavior
+            expect(result.config).toEqual({
+                features: ['analytics']  // Level 0 overrides Level 1
+            });
         });
     });
 }); 

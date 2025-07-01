@@ -227,7 +227,8 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
                 encoding: options.defaults.encoding,
                 logger,
                 pathFields: options.defaults.pathResolution?.pathFields,
-                resolvePathArray: options.defaults.pathResolution?.resolvePathArray
+                resolvePathArray: options.defaults.pathResolution?.resolvePathArray,
+                fieldOverlaps: options.defaults.fieldOverlaps
             });
 
             rawFileConfig = hierarchicalResult.config;
