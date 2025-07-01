@@ -130,6 +130,16 @@ export interface Cardigantime<T extends z.ZodRawShape> {
      * Throws ConfigurationError if validation fails.
      */
     validate: (config: z.infer<ZodObject<T & typeof ConfigSchema.shape>>) => Promise<void>;
+    /** 
+     * Generates a configuration file with default values in the specified directory.
+     * Creates the directory if it doesn't exist and writes a config file with all default values populated.
+     */
+    generateConfig: (configDirectory?: string) => Promise<void>;
+    /** 
+     * Checks and displays the resolved configuration with detailed source tracking.
+     * Shows which file and hierarchical level contributed each configuration value in a git blame-like format.
+     */
+    checkConfig: (args: Args) => Promise<void>;
 }
 
 /**

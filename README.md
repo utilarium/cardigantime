@@ -231,6 +231,16 @@ debug: true
 
 # Enable debug mode
 ./myapp --debug
+
+# Generate initial configuration file
+./myapp --init-config
+
+# Analyze configuration with source tracking (git blame-like output)
+./myapp --check-config
+
+# Generate config in custom directory, then analyze it
+./myapp --config-directory ./prod-config --init-config
+./myapp --config-directory ./prod-config --check-config
 ```
 
 ### Advanced Usage Examples
@@ -553,11 +563,19 @@ Creates a new Cardigantime instance.
   - `configFile` (optional): Config filename, defaults to `'config.yaml'`
   - `isRequired` (optional): Whether config directory must exist, defaults to `false`
   - `encoding` (optional): File encoding, defaults to `'utf8'`
+  - `pathResolution` (optional): Configuration for resolving relative paths
+  - `fieldOverlaps` (optional): Array merge behavior for hierarchical mode
 - `options.configShape` (required): Zod schema shape for validation
 - `options.features` (optional): Array of features to enable, defaults to `['config']`
 - `options.logger` (optional): Custom logger implementation
 
-**Returns:** `Cardigantime` instance
+**Returns:** `Cardigantime` instance with methods:
+- `configure(command)`: Add CLI options to Commander.js command
+- `read(args)`: Read and merge configuration from all sources
+- `validate(config)`: Validate configuration against schema
+- `generateConfig(dir?)`: Generate config file with defaults
+- `checkConfig(args)`: Analyze configuration with source tracking
+- `setLogger(logger)`: Set custom logger
 
 ### `cardigantime.configure(command)`
 
@@ -568,8 +586,10 @@ Adds Cardigantime's CLI options to a Commander.js command.
 
 **Returns:** Promise<Command> - The modified command
 
-**Added Options:**
-- `-c, --config-directory <path>`: Override config directory
+**Added CLI Options:**
+- `-c, --config-directory <path>`: Override the default configuration directory path
+- `--init-config`: Generate initial configuration file with default values and exit
+- `--check-config`: Display resolved configuration with source tracking and exit
 
 ### `cardigantime.read(args)`
 
@@ -589,12 +609,466 @@ Validates configuration against the schema.
 
 **Returns:** Promise<void> - Throws on validation failure
 
+### `cardigantime.generateConfig(configDirectory?)`
+
+Generates a configuration file with default values from your Zod schema.
+
+**Parameters:**
+- `configDirectory` (optional): Target directory for the config file. Uses default if not specified.
+
+**Returns:** Promise<void> - Resolves when file is created
+
+**Features:**
+- Creates the directory if it doesn't exist
+- Generates YAML with all default values from your schema
+- Includes helpful comments and formatting
+- Won't overwrite existing files (shows preview instead)
+
+### `cardigantime.checkConfig(args)`
+
+Analyzes and displays resolved configuration with detailed source tracking.
+
+**Parameters:**
+- `args`: Parsed command-line arguments object
+
+**Returns:** Promise<void> - Displays analysis and exits
+
+**Features:**
+- Shows which file/level contributed each configuration value
+- Git blame-like output format
+- Hierarchical source tracking
+- Precedence visualization
+- Summary statistics
+
 ### `cardigantime.setLogger(logger)`
 
 Sets a custom logger for debugging and error reporting.
 
 **Parameters:**
 - `logger`: Logger implementing the Logger interface
+
+## Configuration Options Reference
+
+Cardigantime provides extensive configuration options to customize how configuration files are loaded, processed, and merged. Here's a comprehensive reference of all available options.
+
+### Default Options (`defaults`)
+
+All options passed to the `defaults` property when creating a Cardigantime instance:
+
+#### Required Options
+
+**`configDirectory`** (string, required)
+- Directory path where configuration files are located
+- Can be relative (`./config`) or absolute (`/etc/myapp`)
+- Will be resolved relative to the current working directory
+- Example: `'./config'`, `'/etc/myapp'`, `'~/.config/myapp'`
+
+#### Optional Options
+
+**`configFile`** (string, optional)
+- Name of the configuration file within the config directory
+- Default: `'config.yaml'`
+- Supports any YAML file extension (`.yaml`, `.yml`)
+- Example: `'app.yaml'`, `'settings.yml'`, `'myapp-config.yaml'`
+
+**`isRequired`** (boolean, optional)
+- Whether the configuration directory must exist
+- Default: `false`
+- When `true`: Throws error if directory doesn't exist
+- When `false`: Continues with empty config if directory is missing
+- Useful for applications that can run without configuration files
+
+**`encoding`** (string, optional)
+- File encoding for reading configuration files
+- Default: `'utf8'`
+- Common values: `'utf8'`, `'ascii'`, `'utf16le'`, `'latin1'`
+- Must be a valid Node.js buffer encoding
+
+**`pathResolution`** (PathResolutionOptions, optional)
+- Configuration for resolving relative paths in configuration values
+- Paths are resolved relative to the configuration file's directory
+- Useful for making configuration portable across environments
+
+`pathResolution.pathFields` (string[], optional)
+- Array of field names (using dot notation) that contain paths to be resolved
+- Example: `['outputDir', 'logFile', 'database.backupPath']`
+- Supports nested fields using dot notation
+
+`pathResolution.resolvePathArray` (string[], optional)  
+- Array of field names whose array elements should all be resolved as paths
+- Example: `['includePaths', 'excludePatterns']`
+- Only affects array fields - individual elements that are strings will be resolved as paths
+
+**Example:**
+```typescript
+const cardigantime = create({
+  defaults: {
+    configDirectory: './config',
+    configFile: 'myapp.yaml',
+    isRequired: true,
+    encoding: 'utf8',
+    pathResolution: {
+      pathFields: ['outputDir', 'logFile', 'database.backupDir'],
+      resolvePathArray: ['includePaths', 'watchDirectories']
+    }
+  },
+  configShape: MySchema.shape
+});
+```
+
+If your config file at `./config/myapp.yaml` contains:
+```yaml
+outputDir: ./build          # Resolved to ./config/build
+logFile: ../logs/app.log    # Resolved to ./logs/app.log
+includePaths:               # Each element resolved as path
+  - ./src
+  - ../shared
+database:
+  backupDir: ./backups      # Resolved to ./config/backups
+```
+
+**`fieldOverlaps`** (FieldOverlapOptions, optional)
+- Configuration for how array fields should be merged in hierarchical mode
+- Only applies when the `'hierarchical'` feature is enabled
+- Controls whether arrays are replaced, combined, or prepended during hierarchical merging
+- Default: All arrays use `'override'` behavior
+
+**Available overlap modes:**
+- `'override'` (default): Higher precedence arrays completely replace lower precedence arrays
+- `'append'`: Higher precedence array elements are appended to lower precedence arrays
+- `'prepend'`: Higher precedence array elements are prepended to lower precedence arrays
+
+**Example:**
+```typescript
+const cardigantime = create({
+  defaults: {
+    configDirectory: '.myapp',
+    fieldOverlaps: {
+      'features': 'append',              // Combine features from all levels
+      'excludePatterns': 'prepend',      // Higher precedence first
+      'api.endpoints': 'append',         // Nested field configuration
+      'middleware.stack': 'override'     // Replace entirely (default)
+    }
+  },
+  features: ['config', 'hierarchical'],
+  configShape: MySchema.shape
+});
+```
+
+With this configuration and hierarchy:
+```yaml
+# Parent level (lower precedence)
+features: ['auth', 'logging']
+excludePatterns: ['*.tmp']
+
+# Child level (higher precedence)  
+features: ['analytics']
+excludePatterns: ['*.log']
+```
+
+Results in:
+```yaml
+features: ['auth', 'logging', 'analytics']  # append mode
+excludePatterns: ['*.log', '*.tmp']          # prepend mode
+```
+
+### Instance Options
+
+**`features`** (Feature[], optional)
+- Array of features to enable in the Cardigantime instance
+- Default: `['config']`
+- Available features:
+  - `'config'`: Basic configuration file loading and validation
+  - `'hierarchical'`: Hierarchical configuration discovery and merging
+
+**`configShape`** (ZodRawShape, required)
+- Zod schema shape defining your configuration structure
+- Used for validation and generating default configuration files
+- Must be the `.shape` property of a Zod object schema
+- Provides TypeScript type inference for the final configuration
+
+**`logger`** (Logger, optional)  
+- Custom logger implementation for debugging and error reporting
+- Default: Console-based logger
+- Must implement the Logger interface with methods: `debug`, `info`, `warn`, `error`, `verbose`, `silly`
+
+**Complete example:**
+```typescript
+import { create } from '@theunwalked/cardigantime';
+import { z } from 'zod';
+import winston from 'winston';
+
+const MyConfigSchema = z.object({
+  api: z.object({
+    endpoint: z.string().url(),
+    timeout: z.number().default(5000),
+    retries: z.number().default(3)
+  }),
+  features: z.array(z.string()).default(['auth']),
+  debug: z.boolean().default(false),
+  outputDir: z.string().default('./output'),
+  includePaths: z.array(z.string()).default([])
+});
+
+const customLogger = winston.createLogger({
+  level: 'debug',
+  format: winston.format.json(),
+  transports: [new winston.transports.Console()]
+});
+
+const cardigantime = create({
+  // Default options
+  defaults: {
+    configDirectory: './.myapp-config',
+    configFile: 'config.yaml',
+    isRequired: false,
+    encoding: 'utf8',
+    pathResolution: {
+      pathFields: ['outputDir'],
+      resolvePathArray: ['includePaths']
+    },
+    fieldOverlaps: {
+      'features': 'append',
+      'includePaths': 'append'
+    }
+  },
+  // Instance options
+  features: ['config', 'hierarchical'],
+  configShape: MyConfigSchema.shape,
+  logger: customLogger
+});
+```
+
+### Environment-Specific Configuration
+
+You can dynamically configure Cardigantime based on environment variables:
+
+```typescript
+const environment = process.env.NODE_ENV || 'development';
+
+const cardigantime = create({
+  defaults: {
+    configDirectory: `./config/${environment}`,
+    configFile: `${environment}.yaml`,
+    isRequired: environment === 'production', // Require config in prod
+    pathResolution: {
+      pathFields: environment === 'development' ? ['outputDir'] : []
+    }
+  },
+  features: environment === 'development' ? ['config'] : ['config', 'hierarchical'],
+  configShape: MySchema.shape
+});
+```
+
+### Configuration Discovery and Precedence
+
+When using hierarchical configuration (`features: ['config', 'hierarchical']`):
+
+1. **Discovery**: Cardigantime searches up the directory tree from the specified config directory
+2. **Loading**: Loads configuration files from each discovered directory
+3. **Merging**: Merges configurations with proper precedence (closer directories win)
+4. **CLI Override**: Command-line arguments take final precedence over all file sources
+
+**Example discovery path:**
+Starting from `/project/subdir/.myapp-config`:
+1. `/project/subdir/.myapp-config/config.yaml` (Level 0 - highest precedence)
+2. `/project/.myapp-config/config.yaml` (Level 1 - lower precedence)  
+3. `/.myapp-config/config.yaml` (Level 2 - lowest precedence)
+
+## Configuration Analysis & Debugging
+
+Cardigantime provides powerful tools for understanding how your configuration is resolved and where values come from. These are especially useful when working with complex hierarchical configurations.
+
+### Configuration Generation (`--init-config`)
+
+The `--init-config` option generates a complete configuration file with all default values from your Zod schema:
+
+```bash
+# Generate config file in default directory
+./myapp --init-config
+
+# Generate config file in custom directory  
+./myapp --config-directory ./my-config --init-config
+```
+
+**What it does:**
+- Creates the target directory if it doesn't exist
+- Generates a YAML file with all default values from your schema
+- Includes helpful comments and proper formatting
+- Won't overwrite existing files (shows what would be generated instead)
+
+**Example generated file:**
+```yaml
+# Configuration file generated by Cardigantime
+# This file contains default values for your application configuration.
+# Modify the values below to customize your application's behavior.
+
+api:
+  endpoint: https://api.example.com
+  retries: 3
+  timeout: 5000
+debug: false
+excludePatterns:
+  - "*.tmp"
+  - "*.log"
+features:
+  - auth
+  - logging
+outputDir: ./output
+```
+
+**Programmatic usage:**
+```typescript
+// Generate config file programmatically
+await cardigantime.generateConfig('./production-config');
+```
+
+### Configuration Source Analysis (`--check-config`)
+
+The `--check-config` option provides a git blame-like view of your configuration, showing exactly which file and hierarchical level contributed each configuration value:
+
+```bash
+# Analyze configuration with source tracking
+./myapp --check-config
+
+# Analyze with custom config directory
+./myapp --config-directory ./prod-config --check-config
+```
+
+**Example output:**
+```
+================================================================================
+CONFIGURATION SOURCE ANALYSIS
+================================================================================
+
+DISCOVERED CONFIGURATION HIERARCHY:
+  Level 0: /project/subdir/.myapp-config (highest precedence)
+  Level 1: /project/.myapp-config (lowest precedence)
+
+RESOLVED CONFIGURATION WITH SOURCES:
+Format: [Source] key: value
+
+[Level 0: subdir        ] api.endpoint        : "https://api.child.com"
+[Level 1: project       ] api.retries         : 3
+[Level 0: subdir        ] api.timeout         : 10000
+[Built-in (runtime)     ] configDirectory     : "/project/subdir/.myapp-config"
+[Level 0: subdir        ] debug               : true
+[Level 1: project       ] excludePatterns     : ["*.tmp", "*.log"]
+[Level 0: subdir        ] features            : ["auth", "logging", "analytics"]
+
+--------------------------------------------------------------------------------
+SUMMARY:
+  Total configuration keys: 7
+  Configuration sources: 2
+  Values by source:
+    Level 0: subdir: 4 value(s)
+    Level 1: project: 2 value(s)
+    Built-in (runtime): 1 value(s)
+================================================================================
+```
+
+**Key features:**
+- **Source tracking**: Shows exactly which file provided each value
+- **Hierarchical visualization**: Displays precedence levels clearly
+- **Conflict resolution**: Shows how higher precedence values override lower ones
+- **Array merging insight**: For hierarchical configs with custom `fieldOverlaps`
+- **Built-in values**: Tracks runtime-generated configuration values
+
+**Programmatic usage:**
+```typescript
+// Analyze configuration programmatically
+await cardigantime.checkConfig(args);
+```
+
+### Debugging Complex Configurations
+
+These tools are especially powerful for debugging complex scenarios:
+
+#### Hierarchical Configuration Debugging
+
+When using hierarchical configuration with custom array merging:
+
+```typescript
+const cardigantime = create({
+  defaults: {
+    configDirectory: '.myapp',
+    fieldOverlaps: {
+      'features': 'append',           // Combine features from all levels
+      'excludePatterns': 'prepend'    // Higher precedence first
+    }
+  },
+  features: ['config', 'hierarchical'],
+  configShape: MySchema.shape
+});
+```
+
+Use `--check-config` to see exactly how arrays are being merged:
+
+```bash
+./myapp --check-config
+# Shows which level contributed each array element
+```
+
+#### Configuration Validation Issues
+
+When you get validation errors, use these steps:
+
+1. **Generate a reference config**: `./myapp --init-config` to see what valid config looks like
+2. **Check your current config**: `./myapp --check-config` to see what values are actually being used
+3. **Compare the differences**: Look for typos, wrong types, or missing required fields
+
+#### Path Resolution Debugging
+
+When using `pathResolution` options:
+
+```typescript
+const cardigantime = create({
+  defaults: {
+    configDirectory: './config',
+    pathResolution: {
+      pathFields: ['outputDir', 'logFile'],
+      resolvePathArray: ['includePaths']
+    }
+  },
+  configShape: MySchema.shape
+});
+```
+
+Use `--check-config` to verify paths are being resolved correctly relative to your config file location.
+
+### Troubleshooting Common Issues
+
+**Problem: "Configuration validation failed"**
+```bash
+# Step 1: Generate a reference config to see valid structure
+./myapp --init-config
+
+# Step 2: Check what your current config resolves to
+./myapp --check-config
+
+# Step 3: Compare and fix validation issues
+```
+
+**Problem: "Unknown configuration keys found"**
+```bash
+# Check what keys are actually being loaded
+./myapp --check-config
+# Look for typos in key names (e.g., 'databse' instead of 'database')
+```
+
+**Problem: "Values not being overridden as expected"**
+```bash
+# Check configuration precedence and sources
+./myapp --check-config
+# Verify hierarchical levels and CLI argument parsing
+```
+
+**Problem: "Array values not merging correctly"**
+```bash
+# For hierarchical configurations, check array merge behavior
+./myapp --check-config
+# Verify your fieldOverlaps configuration
+```
 
 ## Advanced Usage
 

@@ -3,7 +3,7 @@ import * as path from 'path';
 import { z, ZodObject } from 'zod';
 import { Args, ConfigSchema, Options } from './types';
 import * as Storage from './util/storage';
-import { loadHierarchicalConfig } from './util/hierarchical';
+import { loadHierarchicalConfig, DiscoveredConfigDir } from './util/hierarchical';
 
 /**
  * Removes undefined values from an object to create a clean configuration.
@@ -321,3 +321,340 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
 
     return rawFileConfig;
 }
+
+/**
+ * Represents a configuration value with its source information.
+ */
+interface ConfigSourceInfo {
+    /** The configuration value */
+    value: any;
+    /** Path to the configuration file that provided this value */
+    sourcePath: string;
+    /** Hierarchical level (0 = closest/highest precedence) */
+    level: number;
+    /** Short description of the source for display */
+    sourceLabel: string;
+}
+
+/**
+ * Tracks configuration values to their sources during hierarchical loading.
+ */
+interface ConfigSourceTracker {
+    [key: string]: ConfigSourceInfo;
+}
+
+/**
+ * Recursively tracks the source of configuration values from hierarchical loading.
+ * 
+ * @param config - The configuration object to track
+ * @param sourcePath - Path to the configuration file
+ * @param level - Hierarchical level
+ * @param prefix - Current object path prefix for nested values
+ * @param tracker - The tracker object to populate
+ */
+function trackConfigSources(
+    config: any,
+    sourcePath: string,
+    level: number,
+    prefix: string = '',
+    tracker: ConfigSourceTracker = {}
+): ConfigSourceTracker {
+    if (!config || typeof config !== 'object' || Array.isArray(config)) {
+        // For primitives and arrays, track the entire value
+        tracker[prefix] = {
+            value: config,
+            sourcePath,
+            level,
+            sourceLabel: `Level ${level}: ${path.basename(path.dirname(sourcePath))}`
+        };
+        return tracker;
+    }
+
+    // For objects, recursively track each property
+    for (const [key, value] of Object.entries(config)) {
+        const fieldPath = prefix ? `${prefix}.${key}` : key;
+        trackConfigSources(value, sourcePath, level, fieldPath, tracker);
+    }
+
+    return tracker;
+}
+
+/**
+ * Merges multiple configuration source trackers with proper precedence.
+ * Lower level numbers have higher precedence.
+ * 
+ * @param trackers - Array of trackers from different config sources
+ * @returns Merged tracker with proper precedence
+ */
+function mergeConfigTrackers(trackers: ConfigSourceTracker[]): ConfigSourceTracker {
+    const merged: ConfigSourceTracker = {};
+
+    for (const tracker of trackers) {
+        for (const [key, info] of Object.entries(tracker)) {
+            // Only update if we don't have this key yet, or if this source has higher precedence (lower level)
+            if (!merged[key] || info.level < merged[key].level) {
+                merged[key] = info;
+            }
+        }
+    }
+
+    return merged;
+}
+
+/**
+ * Formats a configuration value for display, handling different types appropriately.
+ * 
+ * @param value - The configuration value to format
+ * @returns Formatted string representation
+ */
+function formatConfigValue(value: any): string {
+    if (value === null) return 'null';
+    if (value === undefined) return 'undefined';
+    if (typeof value === 'string') return `"${value}"`;
+    if (typeof value === 'boolean') return value.toString();
+    if (typeof value === 'number') return value.toString();
+    if (Array.isArray(value)) {
+        if (value.length === 0) return '[]';
+        if (value.length <= 3) {
+            return `[${value.map(formatConfigValue).join(', ')}]`;
+        }
+        return `[${value.slice(0, 2).map(formatConfigValue).join(', ')}, ... (${value.length} items)]`;
+    }
+    if (typeof value === 'object') {
+        const keys = Object.keys(value);
+        if (keys.length === 0) return '{}';
+        if (keys.length <= 2) {
+            return `{${keys.slice(0, 2).join(', ')}}`;
+        }
+        return `{${keys.slice(0, 2).join(', ')}, ... (${keys.length} keys)}`;
+    }
+    return String(value);
+}
+
+/**
+ * Displays configuration with source tracking in a git blame-like format.
+ * 
+ * @param config - The resolved configuration object
+ * @param tracker - Configuration source tracker
+ * @param discoveredDirs - Array of discovered configuration directories
+ * @param logger - Logger instance for output
+ */
+function displayConfigWithSources(
+    config: any,
+    tracker: ConfigSourceTracker,
+    discoveredDirs: DiscoveredConfigDir[],
+    logger: any
+): void {
+    logger.info('\n' + '='.repeat(80));
+    logger.info('CONFIGURATION SOURCE ANALYSIS');
+    logger.info('='.repeat(80));
+
+    // Display discovered configuration hierarchy
+    logger.info('\nDISCOVERED CONFIGURATION HIERARCHY:');
+    if (discoveredDirs.length === 0) {
+        logger.info('  No configuration directories found in hierarchy');
+    } else {
+        discoveredDirs
+            .sort((a, b) => a.level - b.level) // Sort by precedence (lower level = higher precedence)
+            .forEach(dir => {
+                const precedence = dir.level === 0 ? '(highest precedence)' :
+                    dir.level === Math.max(...discoveredDirs.map(d => d.level)) ? '(lowest precedence)' :
+                        '';
+                logger.info(`  Level ${dir.level}: ${dir.path} ${precedence}`);
+            });
+    }
+
+    // Display resolved configuration with sources
+    logger.info('\nRESOLVED CONFIGURATION WITH SOURCES:');
+    logger.info('Format: [Source] key: value\n');
+
+    const sortedKeys = Object.keys(tracker).sort();
+    const maxKeyLength = Math.max(...sortedKeys.map(k => k.length), 20);
+    const maxSourceLength = Math.max(...Object.values(tracker).map(info => info.sourceLabel.length), 25);
+
+    for (const key of sortedKeys) {
+        const info = tracker[key];
+        const paddedKey = key.padEnd(maxKeyLength);
+        const paddedSource = info.sourceLabel.padEnd(maxSourceLength);
+        const formattedValue = formatConfigValue(info.value);
+
+        logger.info(`[${paddedSource}] ${paddedKey}: ${formattedValue}`);
+    }
+
+    // Display summary
+    logger.info('\n' + '-'.repeat(80));
+    logger.info('SUMMARY:');
+    logger.info(`  Total configuration keys: ${Object.keys(tracker).length}`);
+    logger.info(`  Configuration sources: ${discoveredDirs.length}`);
+
+    // Count values by source
+    const sourceCount: { [source: string]: number } = {};
+    for (const info of Object.values(tracker)) {
+        sourceCount[info.sourceLabel] = (sourceCount[info.sourceLabel] || 0) + 1;
+    }
+
+    logger.info('  Values by source:');
+    for (const [source, count] of Object.entries(sourceCount)) {
+        logger.info(`    ${source}: ${count} value(s)`);
+    }
+
+    logger.info('='.repeat(80));
+}
+
+/**
+ * Checks and displays the resolved configuration with detailed source tracking.
+ * 
+ * This function provides a git blame-like view of configuration resolution,
+ * showing which file and hierarchical level contributed each configuration value.
+ * 
+ * @template T - The Zod schema shape type for configuration validation
+ * @param args - Parsed command-line arguments
+ * @param options - Cardigantime options with defaults, schema, and logger
+ * @returns Promise that resolves when the configuration check is complete
+ * 
+ * @example
+ * ```typescript
+ * await checkConfig(cliArgs, {
+ *   defaults: { configDirectory: './config', configFile: 'app.yaml' },
+ *   configShape: MySchema.shape,
+ *   logger: console,
+ *   features: ['config', 'hierarchical']
+ * });
+ * // Outputs detailed configuration source analysis
+ * ```
+ */
+export const checkConfig = async <T extends z.ZodRawShape>(
+    args: Args,
+    options: Options<T>
+): Promise<void> => {
+    const logger = options.logger;
+
+    logger.info('Starting configuration check...');
+
+    const rawConfigDir = args.configDirectory || options.defaults?.configDirectory;
+    if (!rawConfigDir) {
+        throw new Error('Configuration directory must be specified');
+    }
+
+    const resolvedConfigDir = validateConfigDirectory(rawConfigDir);
+    logger.verbose(`Resolved config directory: ${resolvedConfigDir}`);
+
+    let rawFileConfig: object = {};
+    let discoveredDirs: DiscoveredConfigDir[] = [];
+    let tracker: ConfigSourceTracker = {};
+
+    // Check if hierarchical configuration discovery is enabled
+    if (options.features.includes('hierarchical')) {
+        logger.verbose('Using hierarchical configuration discovery for source tracking');
+
+        try {
+            // Extract the config directory name from the path for hierarchical discovery
+            const configDirName = path.basename(resolvedConfigDir);
+            const startingDir = path.dirname(resolvedConfigDir);
+
+            logger.debug(`Using hierarchical discovery: configDirName=${configDirName}, startingDir=${startingDir}`);
+
+            const hierarchicalResult = await loadHierarchicalConfig({
+                configDirName,
+                configFileName: options.defaults.configFile,
+                startingDir,
+                encoding: options.defaults.encoding,
+                logger,
+                pathFields: options.defaults.pathResolution?.pathFields,
+                resolvePathArray: options.defaults.pathResolution?.resolvePathArray,
+                fieldOverlaps: options.defaults.fieldOverlaps
+            });
+
+            rawFileConfig = hierarchicalResult.config;
+            discoveredDirs = hierarchicalResult.discoveredDirs;
+
+            // Build detailed source tracking by re-loading each config individually
+            const trackers: ConfigSourceTracker[] = [];
+
+            // Sort by level (highest level first = lowest precedence first) to match merge order
+            const sortedDirs = [...discoveredDirs].sort((a, b) => b.level - a.level);
+
+            for (const dir of sortedDirs) {
+                const storage = Storage.create({ log: logger.debug });
+                const configFilePath = path.join(dir.path, options.defaults.configFile);
+
+                try {
+                    const exists = await storage.exists(configFilePath);
+                    if (!exists) continue;
+
+                    const isReadable = await storage.isFileReadable(configFilePath);
+                    if (!isReadable) continue;
+
+                    const yamlContent = await storage.readFile(configFilePath, options.defaults.encoding);
+                    const parsedYaml = yaml.load(yamlContent);
+
+                    if (parsedYaml !== null && typeof parsedYaml === 'object') {
+                        const levelTracker = trackConfigSources(parsedYaml, configFilePath, dir.level);
+                        trackers.push(levelTracker);
+                    }
+                } catch (error: any) {
+                    logger.debug(`Error loading config for source tracking from ${configFilePath}: ${error.message}`);
+                }
+            }
+
+            // Merge trackers with proper precedence
+            tracker = mergeConfigTrackers(trackers);
+
+            if (hierarchicalResult.errors.length > 0) {
+                logger.warn('Configuration loading warnings:');
+                hierarchicalResult.errors.forEach(error => logger.warn(`  ${error}`));
+            }
+
+        } catch (error: any) {
+            logger.error('Hierarchical configuration loading failed: ' + (error.message || 'Unknown error'));
+            logger.verbose('Falling back to single directory configuration loading');
+
+            // Fall back to single directory mode for source tracking
+            rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
+            const configFilePath = path.join(resolvedConfigDir, options.defaults.configFile);
+            tracker = trackConfigSources(rawFileConfig, configFilePath, 0);
+            discoveredDirs = [{
+                path: resolvedConfigDir,
+                level: 0
+            }];
+        }
+    } else {
+        // Use traditional single directory configuration loading
+        logger.verbose('Using single directory configuration loading for source tracking');
+        rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
+        const configFilePath = path.join(resolvedConfigDir, options.defaults.configFile);
+        tracker = trackConfigSources(rawFileConfig, configFilePath, 0);
+        discoveredDirs = [{
+            path: resolvedConfigDir,
+            level: 0
+        }];
+    }
+
+    // Apply path resolution if configured (this doesn't change source tracking)
+    let processedConfig = rawFileConfig;
+    if (options.defaults.pathResolution?.pathFields) {
+        processedConfig = resolveConfigPaths(
+            rawFileConfig,
+            resolvedConfigDir,
+            options.defaults.pathResolution.pathFields,
+            options.defaults.pathResolution.resolvePathArray || []
+        );
+    }
+
+    // Build final configuration including built-in values
+    const finalConfig = clean({
+        ...processedConfig,
+        configDirectory: resolvedConfigDir,
+    });
+
+    // Add built-in configuration to tracker
+    tracker['configDirectory'] = {
+        value: resolvedConfigDir,
+        sourcePath: 'built-in',
+        level: -1,
+        sourceLabel: 'Built-in (runtime)'
+    };
+
+    // Display the configuration with source information
+    displayConfigWithSources(finalConfig, tracker, discoveredDirs, logger);
+};

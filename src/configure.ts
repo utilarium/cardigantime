@@ -133,6 +133,18 @@ export const configure = async <T extends z.ZodRawShape>(
         validatedDefaultDir
     );
 
+    // Add the init config option
+    retCommand = retCommand.option(
+        '--init-config',
+        'Generate initial configuration file and exit'
+    );
+
+    // Add the check config option
+    retCommand = retCommand.option(
+        '--check-config',
+        'Display resolved configuration with source tracking and exit'
+    );
+
     return retCommand;
 }
 
