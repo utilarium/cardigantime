@@ -1,6 +1,6 @@
 {
     "name": "@theunwalked/cardigantime",
-    "version": "0.0.7",
+    "version": "0.0.8",
     "description": "cardigantime is a tool to help you time your cardigans.",
     "type": "module",
     "main": "./dist/cardigantime.cjs",
