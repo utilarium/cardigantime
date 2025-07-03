@@ -467,7 +467,12 @@ describe('cardigantime', () => {
             });
 
             const testArgs: Args = { configDirectory: '/test' };
-            const testConfig = { configDirectory: '/test', testField: 'value' };
+            const testConfig = {
+                configDirectory: '/test',
+                testField: 'value',
+                resolvedConfigDirs: ['/test'],
+                discoveredConfigDirs: ['/test']
+            };
 
             // Test all methods to ensure they receive correct options
             await instance.configure(mockCommand);

@@ -1,4 +1,4 @@
-import { z, ZodObject } from 'zod';
+import { z } from 'zod';
 
 /**
  * Extracts default values from a Zod schema recursively.
@@ -182,7 +182,7 @@ export const extractConfigFileDefaults = (schema: z.ZodTypeAny): any => {
  */
 export const generateDefaultConfig = <T extends z.ZodRawShape>(
     configShape: T,
-    configDirectory: string
+    _configDirectory: string
 ): Record<string, any> => {
     // Create the full schema by combining base and user schema
     const fullSchema = z.object({

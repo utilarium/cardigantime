@@ -208,6 +208,8 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
     logger.verbose('Resolved config directory');
 
     let rawFileConfig: object = {};
+    let discoveredConfigDirs: string[] = [];
+    let resolvedConfigDirs: string[] = [];
 
     // Check if hierarchical configuration discovery is enabled
     if (options.features.includes('hierarchical')) {
@@ -232,6 +234,8 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
             });
 
             rawFileConfig = hierarchicalResult.config;
+            discoveredConfigDirs = hierarchicalResult.discoveredDirs.map(dir => dir.path);
+            resolvedConfigDirs = hierarchicalResult.resolvedConfigDirs.map(dir => dir.path);
 
             if (hierarchicalResult.discoveredDirs.length > 0) {
                 logger.verbose(`Hierarchical discovery found ${hierarchicalResult.discoveredDirs.length} configuration directories`);
@@ -240,6 +244,13 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
                 });
             } else {
                 logger.verbose('No configuration directories found in hierarchy');
+            }
+
+            if (hierarchicalResult.resolvedConfigDirs.length > 0) {
+                logger.verbose(`Found ${hierarchicalResult.resolvedConfigDirs.length} directories with actual configuration files`);
+                hierarchicalResult.resolvedConfigDirs.forEach(dir => {
+                    logger.debug(`  Config dir level ${dir.level}: ${dir.path}`);
+                });
             }
 
             if (hierarchicalResult.errors.length > 0) {
@@ -251,11 +262,27 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
             // Fall back to single directory mode
             logger.verbose('Falling back to single directory configuration loading');
             rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
+
+            // Include the directory in both arrays (discovered but check if it had config)
+            discoveredConfigDirs = [resolvedConfigDir];
+            if (rawFileConfig && Object.keys(rawFileConfig).length > 0) {
+                resolvedConfigDirs = [resolvedConfigDir];
+            } else {
+                resolvedConfigDirs = [];
+            }
         }
     } else {
         // Use traditional single directory configuration loading
         logger.verbose('Using single directory configuration loading');
         rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
+
+        // Include the directory in discovered, and in resolved only if it had config
+        discoveredConfigDirs = [resolvedConfigDir];
+        if (rawFileConfig && Object.keys(rawFileConfig).length > 0) {
+            resolvedConfigDirs = [resolvedConfigDir];
+        } else {
+            resolvedConfigDirs = [];
+        }
     }
 
     // Apply path resolution if configured
@@ -273,6 +300,8 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
         ...processedConfig,
         ...{
             configDirectory: resolvedConfigDir,
+            discoveredConfigDirs,
+            resolvedConfigDirs,
         }
     }) as z.infer<ZodObject<T & typeof ConfigSchema.shape>>;
 
@@ -541,6 +570,7 @@ export const checkConfig = async <T extends z.ZodRawShape>(
 
     let rawFileConfig: object = {};
     let discoveredDirs: DiscoveredConfigDir[] = [];
+    let resolvedConfigDirs: DiscoveredConfigDir[] = [];
     let tracker: ConfigSourceTracker = {};
 
     // Check if hierarchical configuration discovery is enabled
@@ -567,12 +597,13 @@ export const checkConfig = async <T extends z.ZodRawShape>(
 
             rawFileConfig = hierarchicalResult.config;
             discoveredDirs = hierarchicalResult.discoveredDirs;
+            resolvedConfigDirs = hierarchicalResult.resolvedConfigDirs;
 
             // Build detailed source tracking by re-loading each config individually
             const trackers: ConfigSourceTracker[] = [];
 
             // Sort by level (highest level first = lowest precedence first) to match merge order
-            const sortedDirs = [...discoveredDirs].sort((a, b) => b.level - a.level);
+            const sortedDirs = [...resolvedConfigDirs].sort((a, b) => b.level - a.level);
 
             for (const dir of sortedDirs) {
                 const storage = Storage.create({ log: logger.debug });
@@ -613,10 +644,20 @@ export const checkConfig = async <T extends z.ZodRawShape>(
             rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
             const configFilePath = path.join(resolvedConfigDir, options.defaults.configFile);
             tracker = trackConfigSources(rawFileConfig, configFilePath, 0);
+
+            // Include the directory in discovered, and in resolved only if it had config
             discoveredDirs = [{
                 path: resolvedConfigDir,
                 level: 0
             }];
+            if (rawFileConfig && Object.keys(rawFileConfig).length > 0) {
+                resolvedConfigDirs = [{
+                    path: resolvedConfigDir,
+                    level: 0
+                }];
+            } else {
+                resolvedConfigDirs = [];
+            }
         }
     } else {
         // Use traditional single directory configuration loading
@@ -624,10 +665,20 @@ export const checkConfig = async <T extends z.ZodRawShape>(
         rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
         const configFilePath = path.join(resolvedConfigDir, options.defaults.configFile);
         tracker = trackConfigSources(rawFileConfig, configFilePath, 0);
+
+        // Include the directory in discovered, and in resolved only if it had config
         discoveredDirs = [{
             path: resolvedConfigDir,
             level: 0
         }];
+        if (rawFileConfig && Object.keys(rawFileConfig).length > 0) {
+            resolvedConfigDirs = [{
+                path: resolvedConfigDir,
+                level: 0
+            }];
+        } else {
+            resolvedConfigDirs = [];
+        }
     }
 
     // Apply path resolution if configured (this doesn't change source tracking)
@@ -645,11 +696,27 @@ export const checkConfig = async <T extends z.ZodRawShape>(
     const finalConfig = clean({
         ...processedConfig,
         configDirectory: resolvedConfigDir,
+        discoveredConfigDirs: discoveredDirs.map(dir => dir.path),
+        resolvedConfigDirs: resolvedConfigDirs.map(dir => dir.path),
     });
 
     // Add built-in configuration to tracker
     tracker['configDirectory'] = {
         value: resolvedConfigDir,
+        sourcePath: 'built-in',
+        level: -1,
+        sourceLabel: 'Built-in (runtime)'
+    };
+
+    tracker['discoveredConfigDirs'] = {
+        value: discoveredDirs.map(dir => dir.path),
+        sourcePath: 'built-in',
+        level: -1,
+        sourceLabel: 'Built-in (runtime)'
+    };
+
+    tracker['resolvedConfigDirs'] = {
+        value: resolvedConfigDirs.map(dir => dir.path),
         sourcePath: 'built-in',
         level: -1,
         sourceLabel: 'Built-in (runtime)'

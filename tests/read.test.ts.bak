@@ -288,9 +288,7 @@ key2: 123`;
             expect(mockYamlLoad).toHaveBeenCalledWith(yamlContent);
             expect(config).toEqual({
                 ...parsedYaml,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory // Should be added
             });
         });
 
@@ -303,9 +301,7 @@ key2: 123`;
 
             expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Ignoring invalid configuration format'));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory // Only default values applied
             });
         });
 
@@ -318,9 +314,7 @@ key2: 123`;
 
             expect(mockLogger.warn).toHaveBeenCalledWith('Ignoring invalid configuration format. Expected an object, got number');
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -336,9 +330,7 @@ key2: 123`;
             expect(config).toEqual({
                 0: 'item1',
                 1: 'item2',
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -352,9 +344,7 @@ key2: 123`;
             // No warning needed for null, it's handled gracefully
             expect(mockLogger.warn).not.toHaveBeenCalled();
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory // Only default values applied
             });
         });
 
@@ -368,9 +358,7 @@ key2: 123`;
             expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
             expect(mockLogger.error).not.toHaveBeenCalled();
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory // Only default values applied
             });
         });
 
@@ -383,9 +371,7 @@ key2: 123`;
             expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
             expect(mockLogger.error).not.toHaveBeenCalled();
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory // Only default values applied
             });
         });
 
@@ -406,9 +392,7 @@ key2: 123`;
                 expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
                 expect(mockLogger.error).not.toHaveBeenCalled();
                 expect(config).toEqual({
-                    configDirectory: baseOptions.defaults.configDirectory,
-                    discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                    resolvedConfigDirs: []
+                    configDirectory: baseOptions.defaults.configDirectory
                 });
             }
         });
@@ -423,9 +407,7 @@ key2: 123`;
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(error.message));
             expect(mockLogger.verbose).not.toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory // Only default values applied even on error
             });
         });
 
@@ -441,9 +423,7 @@ key2: 123`;
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(`Failed to load or parse configuration`));
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(error.message));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory // Only default values applied even on error
             });
         });
 
@@ -455,9 +435,7 @@ key2: 123`;
 
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown error'));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -475,11 +453,7 @@ key3: undefined`;
             expect(config).toEqual({
                 key1: 'value1',
                 key2: null, // null is a valid JSON/YAML value, should remain
-                key3: undefined,
-                explicitUndefined: undefined,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
             expect(config).not.toHaveProperty('key3');
             expect(config).not.toHaveProperty('explicitUndefined');
@@ -506,9 +480,7 @@ key3: undefined`;
             const config = await read(baseArgs, baseOptions);
 
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -525,9 +497,7 @@ key3: undefined`;
 
             expect(config).toEqual({
                 ...largeObject,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
     });
@@ -648,9 +618,7 @@ key3: undefined`;
             expect(mockReadFile).toHaveBeenCalledWith(expectedPath, 'utf8');
             expect(config).toEqual({
                 key: 'value',
-                configDirectory: validConfigDir,
-                discoveredConfigDirs: [validConfigDir],
-                resolvedConfigDirs: [validConfigDir]
+                configDirectory: validConfigDir
             });
         });
     });
@@ -735,9 +703,7 @@ key3: undefined`;
                 zeroNumber: 0,
                 emptyString: '',
                 nullValue: null,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
             expect(config).not.toHaveProperty('undefinedValue');
         });
@@ -763,9 +729,7 @@ key3: undefined`;
                     undefinedKey: undefined,
                     anotherValid: 42
                 },
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
             expect(config).not.toHaveProperty('topLevel');
         });
@@ -784,9 +748,7 @@ key3: undefined`;
 
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load or parse configuration'));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -843,8 +805,7 @@ key3: undefined`;
                 api: { timeout: 10000 },
                 debug: true,
                 configDirectory: '/project/subdir/.kodrdriv',
-                discoveredConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
+                resolvedConfigDirectories: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
             });
         });
 
@@ -902,8 +863,7 @@ key3: undefined`;
                 excludePatterns: ['*.log', '*.tmp'],
                 api: { timeout: 5000 },
                 configDirectory: '/project/subdir/.kodrdriv',
-                discoveredConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
+                resolvedConfigDirectories: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
             });
         });
 
@@ -948,8 +908,7 @@ key3: undefined`;
                 api: { timeout: 10000 },
                 debug: true,
                 configDirectory: '/project/subdir/.kodrdriv',
-                discoveredConfigDirs: ['/project/subdir/.kodrdriv'],
-                resolvedConfigDirs: ['/project/subdir/.kodrdriv']
+                resolvedConfigDirectories: ['/project/subdir/.kodrdriv']
             });
         });
 
@@ -969,10 +928,6 @@ key3: undefined`;
                     { path: '/project/.kodrdriv', level: 0 },
                     { path: '/.kodrdriv', level: 1 }
                 ],
-                resolvedConfigDirs: [
-                    { path: '/project/.kodrdriv', level: 0 },
-                    { path: '/.kodrdriv', level: 1 }
-                ],
                 errors: []
             };
 
@@ -987,9 +942,7 @@ key3: undefined`;
             expect(mockLogger.debug).toHaveBeenCalledWith('  Level 1: /.kodrdriv');
             expect(config).toEqual({
                 setting: 'value',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv', '/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv', '/.kodrdriv']
+                configDirectory: '/project/.kodrdriv'
             });
         });
 
@@ -1006,7 +959,6 @@ key3: undefined`;
             const mockHierarchicalResult = {
                 config: {},
                 discoveredDirs: [],
-                resolvedConfigDirs: [],
                 errors: []
             };
 
@@ -1018,9 +970,7 @@ key3: undefined`;
 
             expect(mockLogger.verbose).toHaveBeenCalledWith('No configuration directories found in hierarchy');
             expect(config).toEqual({
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: [],
-                resolvedConfigDirs: []
+                configDirectory: '/project/.kodrdriv'
             });
         });
 
@@ -1037,7 +987,6 @@ key3: undefined`;
             const mockHierarchicalResult = {
                 config: { key: 'value' },
                 discoveredDirs: [{ path: '/project/.kodrdriv', level: 0 }],
-                resolvedConfigDirs: [{ path: '/project/.kodrdriv', level: 0 }],
                 errors: [
                     'Permission denied for /restricted/.kodrdriv',
                     'Invalid YAML in /other/.kodrdriv/config.yaml'
@@ -1054,9 +1003,7 @@ key3: undefined`;
             expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Invalid YAML in /other/.kodrdriv/config.yaml');
             expect(config).toEqual({
                 key: 'value',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.kodrdriv'
             });
         });
 
@@ -1085,9 +1032,7 @@ key3: undefined`;
             expect(mockLogger.verbose).toHaveBeenCalledWith('Falling back to single directory configuration loading');
             expect(config).toEqual({
                 fallback: 'config',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.kodrdriv'
             });
         });
 
@@ -1116,9 +1061,7 @@ key3: undefined`;
             expect(mockLogger.verbose).toHaveBeenCalledWith('Falling back to single directory configuration loading');
             expect(config).toEqual({
                 fallback: 'config',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.kodrdriv'
             });
         });
 
@@ -1145,8 +1088,7 @@ key3: undefined`;
             expect(config).toEqual({
                 single: 'directory',
                 configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                resolvedConfigDirectories: ['/project/.kodrdriv']
             });
         });
 
@@ -1172,8 +1114,184 @@ key3: undefined`;
 
             expect(config).toEqual({
                 configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: [],
-                resolvedConfigDirs: []
+                resolvedConfigDirectories: []
+            });
+        });
+
+        test('should include resolvedConfigDirectories from hierarchical discovery', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/subdir/.kodrdriv'
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: { api: { timeout: 10000 }, debug: true },
+                discoveredDirs: [
+                    { path: '/project/subdir/.kodrdriv', level: 0 },
+                    { path: '/project/.kodrdriv', level: 1 },
+                    { path: '/other/.kodrdriv', level: 2 }
+                ],
+                resolvedConfigDirs: [
+                    { path: '/project/subdir/.kodrdriv', level: 0 },
+                    { path: '/project/.kodrdriv', level: 1 }
+                    // Note: '/other/.kodrdriv' was discovered but had no valid config file
+                ],
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project/subdir');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(config).toEqual({
+                api: { timeout: 10000 },
+                debug: true,
+                configDirectory: '/project/subdir/.kodrdriv',
+                resolvedConfigDirectories: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
+            });
+
+            expect(mockLogger.verbose).toHaveBeenCalledWith('Found 2 directories with actual configuration files');
+            expect(mockLogger.debug).toHaveBeenCalledWith('  Config dir level 0: /project/subdir/.kodrdriv');
+            expect(mockLogger.debug).toHaveBeenCalledWith('  Config dir level 1: /project/.kodrdriv');
+        });
+
+        test('should include empty resolvedConfigDirectories when no config files found in hierarchical mode', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const mockHierarchicalResult = {
+                config: {},
+                discoveredDirs: [
+                    { path: '/project/.kodrdriv', level: 0 },
+                    { path: '/.kodrdriv', level: 1 }
+                ],
+                resolvedConfigDirs: [], // No directories actually had valid config files
+                errors: []
+            };
+
+            mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
+            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathDirname.mockReturnValue('/project');
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(config).toEqual({
+                configDirectory: '/project/.kodrdriv',
+                resolvedConfigDirectories: []
+            });
+        });
+
+        test('should include only single directory in resolvedConfigDirectories when config file exists', async () => {
+            const singleDirOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const expectedConfigPath = `${singleDirOptions.defaults.configDirectory}/${singleDirOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockResolvedValue('api:\n  timeout: 5000');
+            mockYamlLoad.mockReturnValue({ api: { timeout: 5000 } });
+
+            const config = await read(baseArgs, singleDirOptions);
+
+            expect(config).toEqual({
+                api: { timeout: 5000 },
+                configDirectory: '/project/.kodrdriv',
+                resolvedConfigDirectories: ['/project/.kodrdriv']
+            });
+        });
+
+        test('should include empty resolvedConfigDirectories when config file does not exist', async () => {
+            const singleDirOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            const expectedConfigPath = `${singleDirOptions.defaults.configDirectory}/${singleDirOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockRejectedValue(new Error('ENOENT: no such file or directory'));
+            mockYamlLoad.mockReturnValue({});
+
+            const config = await read(baseArgs, singleDirOptions);
+
+            expect(config).toEqual({
+                configDirectory: '/project/.kodrdriv',
+                resolvedConfigDirectories: []
+            });
+        });
+
+        test('should include resolvedConfigDirectories in fallback when hierarchical fails', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            // Mock hierarchical failure
+            mockLoadHierarchicalConfig.mockRejectedValue(new Error('Hierarchical discovery failed'));
+
+            // Mock single directory fallback with actual config file
+            const expectedConfigPath = `${hierarchicalOptions.defaults.configDirectory}/${hierarchicalOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockResolvedValue('fallback: config');
+            mockYamlLoad.mockReturnValue({ fallback: 'config' });
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(config).toEqual({
+                fallback: 'config',
+                configDirectory: '/project/.kodrdriv',
+                resolvedConfigDirectories: ['/project/.kodrdriv']
+            });
+        });
+
+        test('should include empty resolvedConfigDirectories in fallback when hierarchical fails and no config file exists', async () => {
+            const hierarchicalOptions: Options<any> = {
+                ...baseOptions,
+                features: ['config', 'hierarchical'] as Feature[],
+                defaults: {
+                    ...baseOptions.defaults,
+                    configDirectory: '/project/.kodrdriv'
+                }
+            };
+
+            // Mock hierarchical failure
+            mockLoadHierarchicalConfig.mockRejectedValue(new Error('Hierarchical discovery failed'));
+
+            // Mock single directory fallback with no config file
+            const expectedConfigPath = `${hierarchicalOptions.defaults.configDirectory}/${hierarchicalOptions.defaults.configFile}`;
+            mockPathJoin.mockReturnValue(expectedConfigPath);
+            mockReadFile.mockRejectedValue(new Error('ENOENT: no such file or directory'));
+            mockYamlLoad.mockReturnValue({});
+
+            const config = await read(baseArgs, hierarchicalOptions);
+
+            expect(config).toEqual({
+                configDirectory: '/project/.kodrdriv',
+                resolvedConfigDirectories: []
             });
         });
 
@@ -1347,9 +1465,7 @@ normalField: unchanged
                 scripts: ['./build.sh', './deploy.sh'], // Array elements should be resolved but aren't
                 includePaths: ['./lib', '../shared'], // Array elements should be resolved but aren't
                 normalField: 'unchanged',
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1376,9 +1492,7 @@ inputFile: ./relative/path/input.txt
             expect(config).toEqual({
                 outputDir: '/absolute/path/dist', // Absolute path unchanged
                 inputFile: '/project/config/./relative/path/input.txt', // Relative path resolved
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1401,9 +1515,7 @@ undefinedField: null
 
             expect(config).toEqual({
                 outputDir: '/project/config/dist',
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
             // undefinedField should be cleaned out and not processed
         });
@@ -1431,9 +1543,7 @@ scripts:
 
             expect(config).toEqual({
                 scripts: ['./script1.sh', 42, null, './script2.sh'], // Arrays not currently being resolved
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1470,9 +1580,7 @@ scripts:
             expect(config).toEqual({
                 nonArrayField: '/project/config/single/path',
                 scripts: ['./script1.sh', './script2.sh'], // Array unchanged
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1522,9 +1630,7 @@ level1:
                         }
                     }
                 },
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1555,9 +1661,7 @@ inputFile: ../src/input.txt
             expect(config).toEqual({
                 outputDir: './dist', // Paths unchanged
                 inputFile: '../src/input.txt',
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -1589,9 +1693,7 @@ outputDir: ./dist
 
             expect(config).toEqual({
                 outputDir: './dist', // Path unchanged
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -1606,9 +1708,7 @@ outputDir: ./dist
             const config = await read({ configDirectory: configDir }, pathResolutionOptions);
 
             expect(config).toEqual({
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: []
+                configDirectory: configDir
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -1623,9 +1723,7 @@ outputDir: ./dist
             const config = await read({ configDirectory: configDir }, pathResolutionOptions);
 
             expect(config).toEqual({
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: []
+                configDirectory: configDir
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -1666,9 +1764,7 @@ existing:
                 existing: {
                     field: 'value'
                 },
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -1711,9 +1807,7 @@ new:
                         path: '/project/config/new/path'
                     }
                 },
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1745,9 +1839,7 @@ singleKey: ./single/path
 
             expect(config).toEqual({
                 singleKey: '/project/config/single/path',
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1794,9 +1886,7 @@ completely:
                         }
                     }
                 },
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
 
@@ -1880,9 +1970,7 @@ objectValue:
                 objectValue: {           // Should remain unchanged (not a string)
                     nested: 'content'
                 },
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
             // Path resolution should not be called for non-string values
             expect(mockPathResolve).not.toHaveBeenCalled();
@@ -1959,9 +2047,7 @@ emptyPath: ""
 
             expect(config).toEqual({
                 emptyPath: '', // Empty string should remain unchanged
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -2009,9 +2095,7 @@ mixedArray:
                     {},                         // Object unchanged
                     []                          // Array unchanged
                 ],
-                configDirectory: configDir,
-                discoveredConfigDirs: [configDir],
-                resolvedConfigDirs: [configDir]
+                configDirectory: configDir
             });
         });
     });
@@ -2034,7 +2118,6 @@ mixedArray:
             mockLoadHierarchicalConfig.mockResolvedValue({
                 config: {},
                 discoveredDirs: [],
-                resolvedConfigDirs: [],
                 errors: []
             });
 
@@ -2068,7 +2151,6 @@ mixedArray:
             mockLoadHierarchicalConfig.mockResolvedValue({
                 config: {},
                 discoveredDirs: [],
-                resolvedConfigDirs: [],
                 errors: []
             });
 
@@ -2110,9 +2192,7 @@ mixedArray:
                 expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load or parse configuration'));
                 expect(mockLogger.verbose).not.toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
                 expect(config).toEqual({
-                    configDirectory: baseOptions.defaults.configDirectory,
-                    discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                    resolvedConfigDirs: []
+                    configDirectory: baseOptions.defaults.configDirectory
                 });
             }
         });
@@ -2148,9 +2228,7 @@ mixedArray:
 
             expect(config).toEqual({
                 ...complexYaml,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
     });
@@ -2193,10 +2271,6 @@ mixedArray:
                     features: ['auth', 'logging', 'analytics']
                 },
                 discoveredDirs: [
-                    { path: '/project/subdir/.myapp-config', level: 0 },
-                    { path: '/project/.myapp-config', level: 1 }
-                ],
-                resolvedConfigDirs: [
                     { path: '/project/subdir/.myapp-config', level: 0 },
                     { path: '/project/.myapp-config', level: 1 }
                 ],
@@ -2315,11 +2389,6 @@ mixedArray:
             const mockHierarchicalResult = {
                 config: { api: { timeout: 10000 }, debug: true },
                 discoveredDirs: [
-                    { path: '/project/deep/nested/.myapp-config', level: 0 },
-                    { path: '/project/deep/.myapp-config', level: 1 },
-                    { path: '/project/.myapp-config', level: 2 }
-                ],
-                resolvedConfigDirs: [
                     { path: '/project/deep/nested/.myapp-config', level: 0 },
                     { path: '/project/deep/.myapp-config', level: 1 },
                     { path: '/project/.myapp-config', level: 2 }
@@ -2499,10 +2568,6 @@ mixedArray:
                     { path: '/project/child/.config', level: 0 },
                     { path: '/project/.config', level: 1 }
                 ],
-                resolvedConfigDirs: [
-                    { path: '/project/child/.config', level: 0 },
-                    { path: '/project/.config', level: 1 }
-                ],
                 errors: []
             };
 
@@ -2542,9 +2607,6 @@ mixedArray:
             const mockHierarchicalResult = {
                 config: {},
                 discoveredDirs: [
-                    { path: '/project/.config', level: 0 }
-                ],
-                resolvedConfigDirs: [
                     { path: '/project/.config', level: 0 }
                 ],
                 errors: []
@@ -2597,9 +2659,6 @@ mixedArray:
                 discoveredDirs: [
                     { path: '/project/.config', level: 0 }
                 ],
-                resolvedConfigDirs: [
-                    { path: '/project/.config', level: 0 }
-                ],
                 errors: []
             };
 
@@ -2649,9 +2708,6 @@ mixedArray:
             const mockHierarchicalResult = {
                 config: { key: 'value' },
                 discoveredDirs: [
-                    { path: '/project/.config', level: 0 }
-                ],
-                resolvedConfigDirs: [
                     { path: '/project/.config', level: 0 }
                 ],
                 errors: []
@@ -2725,7 +2781,6 @@ production:
                     parentOnlyValue: 'parent-only'
                 },
                 discoveredDirs: [{ path: '.', level: 0 }],
-                resolvedConfigDirs: [{ path: '.', level: 0 }],
                 errors: []
             });
 
@@ -2735,9 +2790,7 @@ production:
             expect(config).toEqual({
                 overriddenValue: 'parent-value',
                 parentOnlyValue: 'parent-only',
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -2771,7 +2824,6 @@ script: >
                     }
                 },
                 discoveredDirs: [{ path: '.', level: 0 }],
-                resolvedConfigDirs: [{ path: '.', level: 0 }],
                 errors: []
             });
 
@@ -2784,9 +2836,7 @@ script: >
                 nestedValue: {
                     overridden: 'child-nested'
                 },
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -2825,9 +2875,7 @@ binary_data: !!binary |
 
             expect(config).toEqual({
                 ...parsedYaml,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -2846,9 +2894,7 @@ binary_data: !!binary |
 
             expect(config).toEqual({
                 ...deepStructure,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -2873,9 +2919,7 @@ nodeB:
 
             expect(config).toEqual({
                 ...parsedYaml,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
     });
@@ -2892,9 +2936,7 @@ nodeB:
 
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load or parse configuration'));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -2927,9 +2969,7 @@ nodeB:
 
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load or parse configuration'));
             expect(config).toEqual({
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: []
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -2951,9 +2991,7 @@ nodeB:
 
                 expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to load or parse configuration'));
                 expect(config).toEqual({
-                    configDirectory: baseOptions.defaults.configDirectory,
-                    discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                    resolvedConfigDirs: []
+                    configDirectory: baseOptions.defaults.configDirectory
                 });
             }
         });
@@ -3020,9 +3058,7 @@ nodeB:
 
             expect(config).toEqual({
                 nullPath: null,
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
@@ -3056,9 +3092,7 @@ nodeB:
 
             expect(config).toEqual({
                 pathArray: ['./path1', null, './path2', undefined],
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
 
@@ -3134,9 +3168,7 @@ mixedArray:
                     'string item',
                     42
                 ],
-                configDirectory: baseOptions.defaults.configDirectory,
-                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
-                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+                configDirectory: baseOptions.defaults.configDirectory
             });
         });
     });
@@ -3218,7 +3250,6 @@ mixedArray:
             const emptyHierarchicalResult = {
                 config: {},
                 discoveredDirs: [],
-                resolvedConfigDirs: [],
                 errors: []
             };
 

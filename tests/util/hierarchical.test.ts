@@ -402,6 +402,39 @@ describe('Hierarchical Configuration', () => {
             });
         });
 
+        test('should deep merge scopeRoots configuration like KodrDriv example', () => {
+            // This test demonstrates the exact use case described:
+            // Two config files with nested scopeRoots objects should merge their keys
+            const configs = [
+                // Lower precedence config (../../.kodrdriv/config.yaml)
+                {
+                    link: null,
+                    scopeRoots: {
+                        "@theunwalked": "../../SemicolonAmbulance",
+                        "@riotprompt": "../../StJustReckoning"
+                    }
+                },
+                // Higher precedence config (../.kodrdriv/config.yaml) 
+                {
+                    link: null,
+                    scopeRoots: {
+                        "@powerfuck": "../../powerfuck"
+                    }
+                }
+            ];
+
+            const result = deepMergeConfigs(configs);
+
+            expect(result).toEqual({
+                link: null,
+                scopeRoots: {
+                    "@powerfuck": "../../powerfuck",        // From higher precedence config
+                    "@theunwalked": "../../SemicolonAmbulance", // From lower precedence config
+                    "@riotprompt": "../../StJustReckoning"  // From lower precedence config
+                }
+            });
+        });
+
         test('should handle null and undefined values', () => {
             const configs = [
                 { key1: 'value1', key2: null, key3: undefined },

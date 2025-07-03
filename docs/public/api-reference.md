@@ -196,6 +196,11 @@ read(args: Record<string, any>): Promise<ConfigType>
 
 Merged and typed configuration object. The type is inferred from your Zod schema.
 
+The returned configuration object includes special built-in fields:
+- **`configDirectory`**: The resolved configuration directory path
+- **`discoveredConfigDirs`**: Array of all directory paths that were discovered during hierarchical search
+- **`resolvedConfigDirs`**: Array of directory paths that actually contained valid configuration files
+
 ### Behavior
 
 1. **Loads schema defaults**: Applies default values from your Zod schema
@@ -203,6 +208,64 @@ Merged and typed configuration object. The type is inferred from your Zod schema
 3. **Merges configurations**: Deep merges with proper precedence (CLI > files > defaults)
 4. **Resolves paths**: Applies path resolution if configured
 5. **Returns typed config**: Provides full TypeScript support
+
+### `discoveredConfigDirs` and `resolvedConfigDirs` Fields
+
+These fields are automatically added to your configuration and provide detailed information about the hierarchical configuration discovery process.
+
+**`discoveredConfigDirs`**: Contains all directory paths that were found during hierarchical search, regardless of whether they contained configuration files.
+
+**`resolvedConfigDirs`**: Contains only the directory paths that actually contained valid configuration files that contributed to the final configuration.
+
+**Behavior:**
+- **Single directory mode**: `discoveredConfigDirs` contains one element (the specified config directory), `resolvedConfigDirs` contains one element if config file exists, empty array if no config file found
+- **Hierarchical mode**: Both arrays contain directories ordered by precedence (highest first), but `resolvedConfigDirs` only includes directories that had valid config files
+- **Useful for different scenarios**: Use `discoveredConfigDirs` for complete hierarchy processing, `resolvedConfigDirs` for configuration-specific operations
+
+**Examples:**
+
+Single directory mode with config file:
+```typescript
+{
+  // ... your config values ...
+  configDirectory: '/project/config',
+  discoveredConfigDirs: ['/project/config'],
+  resolvedConfigDirs: ['/project/config']
+}
+```
+
+Single directory mode without config file:
+```typescript
+{
+  // ... only schema defaults ...
+  configDirectory: '/project/config',
+  discoveredConfigDirs: ['/project/config'],
+  resolvedConfigDirs: []
+}
+```
+
+Hierarchical configuration:
+```typescript
+{
+  // ... your config values ...
+  configDirectory: '/project/subdir/.myapp',
+  discoveredConfigDirs: [
+    '/project/subdir/.myapp',  // Level 0 (highest precedence)
+    '/project/.myapp',         // Level 1 (lower precedence)
+    '/other/.myapp'            // Level 2 (lowest precedence)
+  ],
+  resolvedConfigDirs: [
+    '/project/subdir/.myapp',  // Level 0 - had config file
+    '/project/.myapp'          // Level 1 - had config file
+    // Note: '/other/.myapp' was discovered but had no config file
+  ]
+}
+```
+
+**Use cases:**
+- **`discoveredConfigDirs`**: Pass to other tools that need to process the same directory hierarchy (like RiotPrompt in KodrDriv), template generation, hierarchical operations
+- **`resolvedConfigDirs`**: Configuration debugging, validation that expected sources were found, configuration-specific processing
+- **Combined**: Full understanding of what was searched vs. what contributed to the final configuration
 
 ### Example
 
@@ -216,6 +279,30 @@ const config = await cardigantime.read(args);
 
 // config is fully typed based on your schema
 console.log(`Server: ${config.host}:${config.port}`);
+
+// Access discovered configuration directories (all found directories)
+console.log('Directories searched for configuration:');
+config.discoveredConfigDirs.forEach((dir, index) => {
+  const precedence = index === 0 ? '(highest precedence)' : '(lower precedence)';
+  console.log(`  ${dir} ${precedence}`);
+});
+
+// Access resolved configuration directories (only directories with config files)
+console.log('Directories that contributed to configuration:');
+config.resolvedConfigDirs.forEach((dir, index) => {
+  const precedence = index === 0 ? '(highest precedence)' : '(lower precedence)';
+  console.log(`  ${dir} ${precedence}`);
+});
+
+// Pass complete hierarchy to other tools
+await riotPrompt.process({
+  configPaths: config.discoveredConfigDirs,  // Use complete hierarchy
+  // ... other options
+});
+
+if (config.resolvedConfigDirs.length === 0) {
+  console.log('  No configuration files found - using schema defaults only');
+}
 ```
 
 ---

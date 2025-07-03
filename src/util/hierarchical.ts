@@ -122,6 +122,8 @@ export interface HierarchicalConfigResult {
     config: object;
     /** Array of directories where configuration was found */
     discoveredDirs: DiscoveredConfigDir[];
+    /** Array of directories that actually contained valid configuration files */
+    resolvedConfigDirs: DiscoveredConfigDir[];
     /** Array of any errors encountered during loading (non-fatal) */
     errors: string[];
 }
@@ -465,12 +467,14 @@ export async function loadHierarchicalConfig(
         return {
             config: {},
             discoveredDirs: [],
+            resolvedConfigDirs: [],
             errors: []
         };
     }
 
     // Load configurations from each directory
     const configs: object[] = [];
+    const resolvedConfigDirs: DiscoveredConfigDir[] = [];
     const errors: string[] = [];
 
     // Sort by level (highest level first = lowest precedence first)
@@ -489,6 +493,7 @@ export async function loadHierarchicalConfig(
 
             if (config !== null) {
                 configs.push(config);
+                resolvedConfigDirs.push(dir);
                 logger?.debug(`Loaded config from level ${dir.level}: ${dir.path}`);
             } else {
                 logger?.debug(`No valid config found at level ${dir.level}: ${dir.path}`);
@@ -508,6 +513,7 @@ export async function loadHierarchicalConfig(
     return {
         config: mergedConfig,
         discoveredDirs,
+        resolvedConfigDirs,
         errors
     };
 } 

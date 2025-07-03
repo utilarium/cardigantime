@@ -86,7 +86,12 @@ describe('validate', () => {
 
     test('should pass validation for a valid config', async () => {
         const shape = z.object({ port: z.number() });
-        const config = { port: 8080, configDirectory: '/config' };
+        const config = {
+            port: 8080,
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
+        };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
         await expect(validate(config, options)).resolves.toBeUndefined();
@@ -95,7 +100,12 @@ describe('validate', () => {
 
     test('should pass validation when configDirectory is not provided', async () => {
         const shape = z.object({ port: z.number() });
-        const config = { port: 8080, configDirectory: '.' }; // Add required configDirectory
+        const config = {
+            port: 8080,
+            configDirectory: '.',
+            discoveredConfigDirs: ['.'],
+            resolvedConfigDirs: ['.']
+        }; // Add required configDirectory
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
         await expect(validate(config, options)).resolves.toBeUndefined();
@@ -104,7 +114,12 @@ describe('validate', () => {
 
     test('should pass validation when features do not include config', async () => {
         const shape = z.object({ port: z.number() });
-        const config = { port: 8080, configDirectory: '/config' };
+        const config = {
+            port: 8080,
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
+        };
         const options: Options<typeof shape.shape> = {
             ...baseOptions,
             configShape: shape.shape,
@@ -117,7 +132,11 @@ describe('validate', () => {
     });
 
     test('should pass validation with empty config when configDirectory does not exist and isRequired is false', async () => {
-        const config = { configDirectory: '/nonexistent' };
+        const config = {
+            configDirectory: '/nonexistent',
+            discoveredConfigDirs: [],
+            resolvedConfigDirs: []
+        };
         const options: Options<any> = {
             ...baseOptions,
             configShape: z.object({}).shape, // Fix: provide proper configShape
@@ -134,19 +153,29 @@ describe('validate', () => {
 
     test('should throw error for extra keys not defined in schema', async () => {
         const shape = z.object({ port: z.number() });
-        const config = { port: 8080, extraKey: 'unexpected', configDirectory: '/config' };
+        const config = {
+            port: 8080,
+            extraKey: 'unexpected',
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
+        };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
-        await expect(validate(config, options)).rejects.toThrow('Unknown configuration keys found: extraKey. Allowed keys are: configDirectory, port');
+        await expect(validate(config, options)).rejects.toThrow('Unknown configuration keys found: extraKey. Allowed keys are: configDirectory, discoveredConfigDirs, resolvedConfigDirs, port');
         expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: extraKey. Allowed keys are:'));
-        expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('configDirectory, port')); // Check allowed keys listing
+        expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('configDirectory, discoveredConfigDirs, resolvedConfigDirs, port')); // Check allowed keys listing
     });
 
     // --- configDirectory Validation Tests ---
 
     test('should throw error if configDirectory is not readable and feature "config" is enabled', async () => {
         const configDir = '/invalid/config/dir';
-        const config = { configDirectory: configDir };
+        const config = {
+            configDirectory: configDir,
+            discoveredConfigDirs: [],
+            resolvedConfigDirs: []
+        };
         const options: Options<any> = { ...baseOptions, features: ['config'] };
         mockExists.mockResolvedValue(true);
         mockIsDirectoryReadable.mockResolvedValue(false);
@@ -158,7 +187,11 @@ describe('validate', () => {
 
     test('should throw error if configDirectory does not exist and feature "config" is enabled and isRequired is true', async () => {
         const configDir = '/invalid/config/dir';
-        const config = { configDirectory: configDir };
+        const config = {
+            configDirectory: configDir,
+            discoveredConfigDirs: [],
+            resolvedConfigDirs: []
+        };
         const options: Options<any> = { ...baseOptions, defaults: { ...baseOptions.defaults, isRequired: true }, features: ['config'] };
         mockExists.mockResolvedValue(false);
 
@@ -175,6 +208,8 @@ describe('validate', () => {
         });
         const config = {
             configDirectory: configDir,
+            discoveredConfigDirs: [],
+            resolvedConfigDirs: []
         };
         const options: Options<typeof shape.shape> = { ...baseOptions, defaults: { ...baseOptions.defaults, isRequired: false }, features: ['config'], configShape: shape.shape };
         mockExists.mockResolvedValue(false);
@@ -194,7 +229,9 @@ describe('validate', () => {
         const config = {
             server: { host: 'localhost', port: 3000 },
             logging: { level: 'info' },
-            configDirectory: '/config'
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
         };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
@@ -208,7 +245,9 @@ describe('validate', () => {
         });
         const config = {
             server: { host: 'localhost', port: '3000' }, // port is string
-            configDirectory: '/config'
+            configDirectory: '/config',
+            discoveredConfigDirs: [],
+            resolvedConfigDirs: []
         };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
@@ -221,7 +260,9 @@ describe('validate', () => {
         const shape = z.object({ server: z.object({ port: z.number() }) });
         const config = {
             server: { port: 8080, unexpected: true }, // Extra key within server
-            configDirectory: '/config'
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
         };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
@@ -236,11 +277,11 @@ describe('validate', () => {
         }
 
         // Check the type passed to validate - it expects the inferred type
-        const typedConfig: z.infer<typeof shape> & { configDirectory: string, anotherExtra: string } = configWithTopLevelExtra;
+        const typedConfig: z.infer<typeof shape> & { configDirectory: string, anotherExtra: string, discoveredConfigDirs: string[], resolvedConfigDirs: string[] } = configWithTopLevelExtra;
 
-        await expect(validate(typedConfig, options)).rejects.toThrow('Unknown configuration keys found: server.unexpected, anotherExtra. Allowed keys are: configDirectory, server.port');
+        await expect(validate(typedConfig, options)).rejects.toThrow('Unknown configuration keys found: server.unexpected, anotherExtra. Allowed keys are: configDirectory, discoveredConfigDirs, resolvedConfigDirs, server.port');
         expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: server.unexpected, anotherExtra. Allowed keys are:'));
-        expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('configDirectory, server.port'));
+        expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('configDirectory, discoveredConfigDirs, resolvedConfigDirs, server.port'));
     });
 
 
@@ -251,7 +292,12 @@ describe('validate', () => {
             required: z.string(),
             optional: z.number().optional()
         });
-        const config = { required: 'hello', configDirectory: '/config' }; // optional is missing
+        const config = {
+            required: 'hello',
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
+        }; // optional is missing
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
         await expect(validate(config, options)).resolves.toBeUndefined();
@@ -263,7 +309,13 @@ describe('validate', () => {
             required: z.string(),
             optional: z.number().optional()
         });
-        const config = { required: 'hello', optional: 123, configDirectory: '/config' };
+        const config = {
+            required: 'hello',
+            optional: 123,
+            configDirectory: '/config',
+            discoveredConfigDirs: ['/config'],
+            resolvedConfigDirs: ['/config']
+        };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
         await expect(validate(config, options)).resolves.toBeUndefined();

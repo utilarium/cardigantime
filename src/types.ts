@@ -157,6 +157,10 @@ export interface Args {
 export const ConfigSchema = z.object({
     /** The resolved configuration directory path */
     configDirectory: z.string(),
+    /** Array of all directory paths that were discovered during hierarchical search */
+    discoveredConfigDirs: z.array(z.string()),
+    /** Array of directory paths that actually contained valid configuration files */
+    resolvedConfigDirs: z.array(z.string()),
 });
 
 /**
