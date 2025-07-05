@@ -127,7 +127,7 @@ describe('Hierarchical Configuration', () => {
     describe('discoverConfigDirectories', () => {
         test('should discover configuration directories up the tree', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 maxLevels: 3,
@@ -136,29 +136,29 @@ describe('Hierarchical Configuration', () => {
 
             // Mock storage responses for directory traversal
             mockStorage.exists
-                .mockResolvedValueOnce(true)          // /project/subdir/.kodrdriv exists
-                .mockResolvedValueOnce(false)         // /project/.kodrdriv doesn't exist
-                .mockResolvedValueOnce(true);         // /.kodrdriv exists
+                .mockResolvedValueOnce(true)          // /project/subdir/.myapp exists
+                .mockResolvedValueOnce(false)         // /project/.myapp doesn't exist
+                .mockResolvedValueOnce(true);         // /.myapp exists
 
             mockStorage.isDirectoryReadable
-                .mockResolvedValueOnce(true)          // /project/subdir/.kodrdriv is readable
-                .mockResolvedValueOnce(true);         // /.kodrdriv is readable
+                .mockResolvedValueOnce(true)          // /project/subdir/.myapp is readable
+                .mockResolvedValueOnce(true);         // /.myapp is readable
 
             const result = await discoverConfigDirectories(options);
 
             expect(result).toEqual([
-                { path: '/project/subdir/.kodrdriv', level: 0 },
-                { path: '/.kodrdriv', level: 2 }
+                { path: '/project/subdir/.myapp', level: 0 },
+                { path: '/.myapp', level: 2 }
             ]);
 
             expect(mockLogger.debug).toHaveBeenCalledWith('Starting hierarchical discovery from: /project/subdir');
-            expect(mockLogger.debug).toHaveBeenCalledWith('Found config directory at level 0: /project/subdir/.kodrdriv');
-            expect(mockLogger.debug).toHaveBeenCalledWith('Found config directory at level 2: /.kodrdriv');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Found config directory at level 0: /project/subdir/.myapp');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Found config directory at level 2: /.myapp');
         });
 
         test('should respect maxLevels limit', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 maxLevels: 1,
@@ -178,7 +178,7 @@ describe('Hierarchical Configuration', () => {
 
         test('should stop at filesystem root', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 logger: mockLogger
@@ -199,7 +199,7 @@ describe('Hierarchical Configuration', () => {
 
         test('should handle unreadable directories', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 logger: mockLogger
@@ -211,12 +211,12 @@ describe('Hierarchical Configuration', () => {
             const result = await discoverConfigDirectories(options);
 
             expect(result).toEqual([]);
-            expect(mockLogger.debug).toHaveBeenCalledWith('Config directory exists but is not readable: /project/.kodrdriv');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Config directory exists but is not readable: /project/.myapp');
         });
 
         test('should prevent infinite loops with symlinks', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/symlink',
                 logger: mockLogger
@@ -250,7 +250,7 @@ describe('Hierarchical Configuration', () => {
 
         test('should handle errors gracefully', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 logger: mockLogger
@@ -262,14 +262,14 @@ describe('Hierarchical Configuration', () => {
 
             expect(result).toEqual([]);
             expect(mockLogger.debug).toHaveBeenCalledWith(
-                expect.stringContaining('Error checking config directory /project/.kodrdriv: Permission denied')
+                expect.stringContaining('Error checking config directory /project/.myapp: Permission denied')
             );
         });
     });
 
     describe('loadConfigFromDirectory', () => {
         test('should load and parse valid YAML configuration', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const configFileName = 'config.yaml';
             const yamlContent = 'apiKey: test-key\ntimeout: 5000';
             const parsedConfig = { apiKey: 'test-key', timeout: 5000 };
@@ -282,27 +282,27 @@ describe('Hierarchical Configuration', () => {
             const result = await loadConfigFromDirectory(configDir, configFileName, 'utf8', mockLogger);
 
             expect(result).toEqual(parsedConfig);
-            expect(mockStorage.readFile).toHaveBeenCalledWith('/project/.kodrdriv/config.yaml', 'utf8');
+            expect(mockStorage.readFile).toHaveBeenCalledWith('/project/.myapp/config.yaml', 'utf8');
             expect(mockYamlLoad).toHaveBeenCalledWith(yamlContent);
         });
 
         test('should return null when config file does not exist', async () => {
             mockStorage.exists.mockResolvedValue(false);
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
-            expect(mockLogger.debug).toHaveBeenCalledWith('Config file does not exist: /project/.kodrdriv/config.yaml');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Config file does not exist: /project/.myapp/config.yaml');
         });
 
         test('should return null when config file is not readable', async () => {
             mockStorage.exists.mockResolvedValue(true);
             mockStorage.isFileReadable.mockResolvedValue(false);
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
-            expect(mockLogger.debug).toHaveBeenCalledWith('Config file exists but is not readable: /project/.kodrdriv/config.yaml');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Config file exists but is not readable: /project/.myapp/config.yaml');
         });
 
         test('should return null for invalid YAML format', async () => {
@@ -311,10 +311,10 @@ describe('Hierarchical Configuration', () => {
             mockStorage.readFile.mockResolvedValue('invalid yaml');
             mockYamlLoad.mockReturnValue('not an object');
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
-            expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.kodrdriv/config.yaml');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.myapp/config.yaml');
         });
 
         test('should handle read errors gracefully', async () => {
@@ -322,11 +322,11 @@ describe('Hierarchical Configuration', () => {
             mockStorage.isFileReadable.mockResolvedValue(true);
             mockStorage.readFile.mockRejectedValue(new Error('Read error'));
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
             expect(mockLogger.debug).toHaveBeenCalledWith(
-                expect.stringContaining('Error loading config from /project/.kodrdriv/config.yaml: Read error')
+                expect.stringContaining('Error loading config from /project/.myapp/config.yaml: Read error')
             );
         });
     });
@@ -402,11 +402,11 @@ describe('Hierarchical Configuration', () => {
             });
         });
 
-        test('should deep merge scopeRoots configuration like KodrDriv example', () => {
+        test('should deep merge scopeRoots configuration like MyApp example', () => {
             // This test demonstrates the exact use case described:
             // Two config files with nested scopeRoots objects should merge their keys
             const configs = [
-                // Lower precedence config (../../.kodrdriv/config.yaml)
+                // Lower precedence config (../../.myapp/config.yaml)
                 {
                     link: null,
                     scopeRoots: {
@@ -414,7 +414,7 @@ describe('Hierarchical Configuration', () => {
                         "@riotprompt": "../../StJustReckoning"
                     }
                 },
-                // Higher precedence config (../.kodrdriv/config.yaml) 
+                // Higher precedence config (../.myapp/config.yaml) 
                 {
                     link: null,
                     scopeRoots: {
@@ -479,7 +479,7 @@ describe('Hierarchical Configuration', () => {
 
         describe('Path Resolution Functionality', () => {
             test('should resolve relative paths in configuration', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'outputDir: ./dist\ninputFile: ../src/index.ts\nabsolutePath: /absolute/path';
                 const parsedConfig = { outputDir: './dist', inputFile: '../src/index.ts', absolutePath: '/absolute/path' };
@@ -492,7 +492,7 @@ describe('Hierarchical Configuration', () => {
                 // Mock path resolution
                 mockPathIsAbsolute.mockImplementation((p: string) => p.startsWith('/'));
                 mockPathResolve.mockImplementation((base: string, relative: string) => {
-                    if (relative === './dist') return '/project/.kodrdriv/dist';
+                    if (relative === './dist') return '/project/.myapp/dist';
                     if (relative === '../src/index.ts') return '/project/src/index.ts';
                     return relative;
                 });
@@ -506,7 +506,7 @@ describe('Hierarchical Configuration', () => {
                 );
 
                 expect(result).toEqual({
-                    outputDir: '/project/.kodrdriv/dist',    // Relative path resolved
+                    outputDir: '/project/.myapp/dist',    // Relative path resolved
                     inputFile: '/project/src/index.ts',     // Relative path resolved
                     absolutePath: '/absolute/path'          // Absolute path unchanged
                 });
@@ -514,12 +514,12 @@ describe('Hierarchical Configuration', () => {
                 expect(mockPathIsAbsolute).toHaveBeenCalledWith('./dist');
                 expect(mockPathIsAbsolute).toHaveBeenCalledWith('../src/index.ts');
                 expect(mockPathIsAbsolute).toHaveBeenCalledWith('/absolute/path');
-                expect(mockPathResolve).toHaveBeenCalledWith('/project/.kodrdriv', './dist');
-                expect(mockPathResolve).toHaveBeenCalledWith('/project/.kodrdriv', '../src/index.ts');
+                expect(mockPathResolve).toHaveBeenCalledWith('/project/.myapp', './dist');
+                expect(mockPathResolve).toHaveBeenCalledWith('/project/.myapp', '../src/index.ts');
             });
 
             test('should resolve array elements when specified in resolvePathArray', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'includes:\n  - ./src\n  - ./tests\n  - /absolute/path\nother:\n  - ./not-resolved';
                 const parsedConfig = {
@@ -534,8 +534,8 @@ describe('Hierarchical Configuration', () => {
 
                 mockPathIsAbsolute.mockImplementation((p: string) => p.startsWith('/'));
                 mockPathResolve.mockImplementation((base: string, relative: string) => {
-                    if (relative === './src') return '/project/.kodrdriv/src';
-                    if (relative === './tests') return '/project/.kodrdriv/tests';
+                    if (relative === './src') return '/project/.myapp/src';
+                    if (relative === './tests') return '/project/.myapp/tests';
                     return relative;
                 });
 
@@ -549,13 +549,13 @@ describe('Hierarchical Configuration', () => {
                 );
 
                 expect(result).toEqual({
-                    includes: ['/project/.kodrdriv/src', '/project/.kodrdriv/tests', '/absolute/path'],
+                    includes: ['/project/.myapp/src', '/project/.myapp/tests', '/absolute/path'],
                     other: ['./not-resolved'] // Array elements not resolved for 'other'
                 });
             });
 
             test('should handle nested path fields with dot notation', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'database:\n  config:\n    path: ./db.sqlite\n    backupPath: ./backups';
                 const parsedConfig = {
@@ -574,8 +574,8 @@ describe('Hierarchical Configuration', () => {
 
                 mockPathIsAbsolute.mockImplementation((p: string) => p.startsWith('/'));
                 mockPathResolve.mockImplementation((base: string, relative: string) => {
-                    if (relative === './db.sqlite') return '/project/.kodrdriv/db.sqlite';
-                    if (relative === './backups') return '/project/.kodrdriv/backups';
+                    if (relative === './db.sqlite') return '/project/.myapp/db.sqlite';
+                    if (relative === './backups') return '/project/.myapp/backups';
                     return relative;
                 });
 
@@ -590,15 +590,15 @@ describe('Hierarchical Configuration', () => {
                 expect(result).toEqual({
                     database: {
                         config: {
-                            path: '/project/.kodrdriv/db.sqlite',
-                            backupPath: '/project/.kodrdriv/backups'
+                            path: '/project/.myapp/db.sqlite',
+                            backupPath: '/project/.myapp/backups'
                         }
                     }
                 });
             });
 
             test('should handle non-existent nested fields gracefully', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'database:\n  host: localhost';
                 const parsedConfig = { database: { host: 'localhost' } };
@@ -622,7 +622,7 @@ describe('Hierarchical Configuration', () => {
             });
 
             test('should handle empty and null path values', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'paths:\n  empty: ""\n  nullValue: null\n  validPath: ./src';
                 const parsedConfig = {
@@ -640,7 +640,7 @@ describe('Hierarchical Configuration', () => {
 
                 mockPathIsAbsolute.mockImplementation((p: string) => p?.startsWith('/') || false);
                 mockPathResolve.mockImplementation((base: string, relative: string) => {
-                    if (relative === './src') return '/project/.kodrdriv/src';
+                    if (relative === './src') return '/project/.myapp/src';
                     return relative;
                 });
 
@@ -656,13 +656,13 @@ describe('Hierarchical Configuration', () => {
                     paths: {
                         empty: '',                           // Empty string unchanged
                         nullValue: null,                     // Null unchanged
-                        validPath: '/project/.kodrdriv/src'  // Valid path resolved
+                        validPath: '/project/.myapp/src'  // Valid path resolved
                     }
                 });
             });
 
             test('should handle mixed array types when resolvePathArray is specified', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'mixed:\n  - ./path1\n  - 123\n  - ./path2\n  - true';
                 const parsedConfig = {
@@ -676,8 +676,8 @@ describe('Hierarchical Configuration', () => {
 
                 mockPathIsAbsolute.mockImplementation((p: string) => typeof p === 'string' && p.startsWith('/'));
                 mockPathResolve.mockImplementation((base: string, relative: string) => {
-                    if (relative === './path1') return '/project/.kodrdriv/path1';
-                    if (relative === './path2') return '/project/.kodrdriv/path2';
+                    if (relative === './path1') return '/project/.myapp/path1';
+                    if (relative === './path2') return '/project/.myapp/path2';
                     return relative;
                 });
 
@@ -691,12 +691,12 @@ describe('Hierarchical Configuration', () => {
                 );
 
                 expect(result).toEqual({
-                    mixed: ['/project/.kodrdriv/path1', 123, '/project/.kodrdriv/path2', true]
+                    mixed: ['/project/.myapp/path1', 123, '/project/.myapp/path2', true]
                 });
             });
 
             test('should not modify config when no pathFields are specified', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'outputDir: ./dist\ninputFile: ../src/index.ts';
                 const parsedConfig = { outputDir: './dist', inputFile: '../src/index.ts' };
@@ -720,7 +720,7 @@ describe('Hierarchical Configuration', () => {
             });
 
             test('should not modify config when pathFields is empty array', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
                 const yamlContent = 'outputDir: ./dist';
                 const parsedConfig = { outputDir: './dist' };
@@ -747,7 +747,7 @@ describe('Hierarchical Configuration', () => {
         describe('Additional Edge Cases and Error Scenarios', () => {
             test('should handle YAML file with complex nested structure', async () => {
                 const options: HierarchicalDiscoveryOptions = {
-                    configDirName: '.kodrdriv',
+                    configDirName: '.myapp',
                     configFileName: 'config.yaml',
                     startingDir: '/project',
                     logger: mockLogger,
@@ -793,9 +793,9 @@ environment: production
 
                 mockPathIsAbsolute.mockImplementation((p: string) => p.startsWith('/'));
                 mockPathResolve.mockImplementation((base: string, relative: string) => {
-                    if (relative === './dist') return '/project/.kodrdriv/dist';
-                    if (relative === './src') return '/project/.kodrdriv/src';
-                    if (relative === './lib') return '/project/.kodrdriv/lib';
+                    if (relative === './dist') return '/project/.myapp/dist';
+                    if (relative === './src') return '/project/.myapp/src';
+                    if (relative === './lib') return '/project/.myapp/lib';
                     return relative;
                 });
 
@@ -803,11 +803,11 @@ environment: production
 
                 expect(result.config).toEqual({
                     build: {
-                        outputDir: '/project/.kodrdriv/dist',
+                        outputDir: '/project/.myapp/dist',
                         clean: true
                     },
                     source: {
-                        includes: ['/project/.kodrdriv/src', '/project/.kodrdriv/lib'],
+                        includes: ['/project/.myapp/src', '/project/.myapp/lib'],
                         excludes: ['*.test.ts']
                     },
                     environment: 'production'
@@ -816,7 +816,7 @@ environment: production
 
             test('should handle storage errors during directory discovery', async () => {
                 const options: HierarchicalDiscoveryOptions = {
-                    configDirName: '.kodrdriv',
+                    configDirName: '.myapp',
                     configFileName: 'config.yaml',
                     startingDir: '/project',
                     logger: mockLogger
@@ -839,7 +839,7 @@ environment: production
 
             test('should handle very long directory traversal', async () => {
                 const options: HierarchicalDiscoveryOptions = {
-                    configDirName: '.kodrdriv',
+                    configDirName: '.myapp',
                     configFileName: 'config.yaml',
                     startingDir: '/very/deep/nested/directory/structure',
                     maxLevels: 2,
@@ -860,7 +860,7 @@ environment: production
             });
 
             test('should handle configuration with non-object root value', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
 
                 mockStorage.exists.mockResolvedValue(true);
@@ -871,11 +871,11 @@ environment: production
                 const result = await loadConfigFromDirectory(configDir, configFileName, 'utf8', mockLogger);
 
                 expect(result).toBeNull();
-                expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.kodrdriv/config.yaml');
+                expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.myapp/config.yaml');
             });
 
             test('should handle configuration with array as root value', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
 
                 mockStorage.exists.mockResolvedValue(true);
@@ -890,7 +890,7 @@ environment: production
             });
 
             test('should handle empty configuration file', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
 
                 mockStorage.exists.mockResolvedValue(true);
@@ -901,11 +901,11 @@ environment: production
                 const result = await loadConfigFromDirectory(configDir, configFileName, 'utf8', mockLogger);
 
                 expect(result).toBeNull();
-                expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.kodrdriv/config.yaml');
+                expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.myapp/config.yaml');
             });
 
             test('should handle storage readFile returning unexpected data type', async () => {
-                const configDir = '/project/.kodrdriv';
+                const configDir = '/project/.myapp';
                 const configFileName = 'config.yaml';
 
                 mockStorage.exists.mockResolvedValue(true);
@@ -920,7 +920,7 @@ environment: production
 
             test('should handle multiple hierarchical configs with path resolution', async () => {
                 const options: HierarchicalDiscoveryOptions = {
-                    configDirName: '.kodrdriv',
+                    configDirName: '.myapp',
                     configFileName: 'config.yaml',
                     startingDir: '/project/subdir',
                     pathFields: ['outputDir', 'includes'],
@@ -930,8 +930,8 @@ environment: production
 
                 // Mock discovery
                 mockStorage.exists
-                    .mockResolvedValueOnce(true)    // /project/subdir/.kodrdriv
-                    .mockResolvedValueOnce(true);   // /project/.kodrdriv
+                    .mockResolvedValueOnce(true)    // /project/subdir/.myapp
+                    .mockResolvedValueOnce(true);   // /project/.myapp
 
                 mockStorage.isDirectoryReadable
                     .mockResolvedValueOnce(true)
@@ -939,8 +939,8 @@ environment: production
 
                 // Mock config loading (sorted order: parent first, then child)
                 mockStorage.exists
-                    .mockResolvedValueOnce(true)    // Parent config exists (/project/.kodrdriv)
-                    .mockResolvedValueOnce(true);   // Child config exists (/project/subdir/.kodrdriv)
+                    .mockResolvedValueOnce(true)    // Parent config exists (/project/.myapp)
+                    .mockResolvedValueOnce(true);   // Child config exists (/project/subdir/.myapp)
 
                 mockStorage.isFileReadable
                     .mockResolvedValueOnce(true)    // Parent config readable
@@ -960,13 +960,13 @@ environment: production
                     if (!base || !relative) return relative || base || '';
 
                     // Handle relative paths properly - return the expected full paths
-                    if (relative === './dist') return '/project/apps/.kodrdriv/dist';
-                    if (relative === './src/shared') return '/project/.kodrdriv/src/shared';
-                    if (relative === './src/common') return '/project/apps/.kodrdriv/src/common';
-                    if (relative === './src/components') return '/project/apps/web/.kodrdriv/src/components';
-                    if (relative === './assets/shared') return '/project/.kodrdriv/assets/shared';
-                    if (relative === './assets/common') return '/project/apps/.kodrdriv/assets/common';
-                    if (relative === './assets/web') return '/project/apps/web/.kodrdriv/assets/web';
+                    if (relative === './dist') return '/project/apps/.myapp/dist';
+                    if (relative === './src/shared') return '/project/.myapp/src/shared';
+                    if (relative === './src/common') return '/project/apps/.myapp/src/common';
+                    if (relative === './src/components') return '/project/apps/web/.myapp/src/components';
+                    if (relative === './assets/shared') return '/project/.myapp/assets/shared';
+                    if (relative === './assets/common') return '/project/apps/.myapp/assets/common';
+                    if (relative === './assets/web') return '/project/apps/web/.myapp/assets/web';
 
                     // For any other relative paths, just combine base and relative
                     if (relative.startsWith('./')) {
@@ -989,13 +989,13 @@ environment: production
                 // The actual result shows that the parent config is being used, which is expected
                 // given our current mock setup. What's important is that path resolution works.
                 expect(result.config).toEqual({
-                    outputDir: '/project/.kodrdriv/build',
-                    includes: ['/project/.kodrdriv/src']
+                    outputDir: '/project/.myapp/build',
+                    includes: ['/project/.myapp/src']
                 });
 
                 // Verify that path resolution occurred
-                expect(mockPathResolve).toHaveBeenCalledWith('/project/.kodrdriv', './build');
-                expect(mockPathResolve).toHaveBeenCalledWith('/project/.kodrdriv', './src');
+                expect(mockPathResolve).toHaveBeenCalledWith('/project/.myapp', './build');
+                expect(mockPathResolve).toHaveBeenCalledWith('/project/.myapp', './src');
             });
         });
 
@@ -1147,7 +1147,7 @@ environment: production
 
         test('should return empty config when no directories found', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 logger: mockLogger
@@ -1169,17 +1169,17 @@ environment: production
             mockStorage.isFileReadable.mockResolvedValue(true);
             mockStorage.readFile.mockRejectedValue(new Error('Read failed'));
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
             expect(mockLogger.debug).toHaveBeenCalledWith(
-                expect.stringContaining('Error loading config from /project/.kodrdriv/config.yaml: Read failed')
+                expect.stringContaining('Error loading config from /project/.myapp/config.yaml: Read failed')
             );
         });
 
         test('should perform full integration: discovery, loading, and merging', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 maxLevels: 3,
@@ -1189,22 +1189,22 @@ environment: production
 
             // Mock directory discovery
             mockStorage.exists
-                .mockResolvedValueOnce(true)    // /project/subdir/.kodrdriv exists
-                .mockResolvedValueOnce(true)    // /project/.kodrdriv exists
-                .mockResolvedValueOnce(false);  // /.kodrdriv doesn't exist
+                .mockResolvedValueOnce(true)    // /project/subdir/.myapp exists
+                .mockResolvedValueOnce(true)    // /project/.myapp exists
+                .mockResolvedValueOnce(false);  // /.myapp doesn't exist
 
             mockStorage.isDirectoryReadable
-                .mockResolvedValueOnce(true)    // /project/subdir/.kodrdriv readable
-                .mockResolvedValueOnce(true);   // /project/.kodrdriv readable
+                .mockResolvedValueOnce(true)    // /project/subdir/.myapp readable
+                .mockResolvedValueOnce(true);   // /project/.myapp readable
 
             // Mock config file loading for discovered directories
             mockStorage.exists
-                .mockResolvedValueOnce(true)    // config file exists in /project/.kodrdriv
-                .mockResolvedValueOnce(true)    // config file exists in /project/subdir/.kodrdriv
+                .mockResolvedValueOnce(true)    // config file exists in /project/.myapp
+                .mockResolvedValueOnce(true)    // config file exists in /project/subdir/.myapp
 
             mockStorage.isFileReadable
-                .mockResolvedValueOnce(true)    // config file readable in /project/.kodrdriv
-                .mockResolvedValueOnce(true);   // config file readable in /project/subdir/.kodrdriv
+                .mockResolvedValueOnce(true)    // config file readable in /project/.myapp
+                .mockResolvedValueOnce(true);   // config file readable in /project/subdir/.myapp
 
             // Mock file content (sorted by level - higher level first = lower precedence first)
             mockStorage.readFile
@@ -1223,8 +1223,8 @@ environment: production
             });
 
             expect(result.discoveredDirs).toEqual([
-                { path: '/project/subdir/.kodrdriv', level: 0 },
-                { path: '/project/.kodrdriv', level: 1 }
+                { path: '/project/subdir/.myapp', level: 0 },
+                { path: '/project/.myapp', level: 1 }
             ]);
 
             expect(result.errors).toEqual([]);
@@ -1232,7 +1232,7 @@ environment: production
 
         test('should handle mixed success and failure scenarios', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 logger: mockLogger
@@ -1240,8 +1240,8 @@ environment: production
 
             // Mock discovery finding 2 directories
             mockStorage.exists
-                .mockResolvedValueOnce(true)    // /project/subdir/.kodrdriv exists
-                .mockResolvedValueOnce(true);   // /project/.kodrdriv exists
+                .mockResolvedValueOnce(true)    // /project/subdir/.myapp exists
+                .mockResolvedValueOnce(true);   // /project/.myapp exists
 
             mockStorage.isDirectoryReadable
                 .mockResolvedValueOnce(true)    // Both readable
@@ -1283,7 +1283,7 @@ environment: production
 
         test('should handle case where config files do not exist in discovered directories', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 logger: mockLogger
@@ -1305,7 +1305,7 @@ environment: production
 
         test('should work without logger', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project'
                 // No logger provided
@@ -1324,7 +1324,7 @@ environment: production
     describe('discoverConfigDirectories - additional edge cases', () => {
         test('should use default maxLevels when not specified', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project'
                 // maxLevels not specified - should default to 10
@@ -1354,7 +1354,7 @@ environment: production
             const processCwdSpy = vi.spyOn(process, 'cwd').mockReturnValue(mockCwd);
 
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml'
                 // startingDir not specified - should use process.cwd()
             };
@@ -1376,7 +1376,7 @@ environment: production
 
         test('should work without logger', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project'
                 // No logger provided
@@ -1393,7 +1393,7 @@ environment: production
 
     describe('loadConfigFromDirectory - additional edge cases', () => {
         test('should handle different encoding values', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const configFileName = 'config.yaml';
             const encoding = 'ascii';
 
@@ -1404,7 +1404,7 @@ environment: production
 
             await loadConfigFromDirectory(configDir, configFileName, encoding, mockLogger);
 
-            expect(mockStorage.readFile).toHaveBeenCalledWith('/project/.kodrdriv/config.yaml', 'ascii');
+            expect(mockStorage.readFile).toHaveBeenCalledWith('/project/.myapp/config.yaml', 'ascii');
         });
 
         test('should handle YAML parsing returning null', async () => {
@@ -1413,10 +1413,10 @@ environment: production
             mockStorage.readFile.mockResolvedValue('null');
             mockYamlLoad.mockReturnValue(null);
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
-            expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.kodrdriv/config.yaml');
+            expect(mockLogger.debug).toHaveBeenCalledWith('Config file contains invalid format: /project/.myapp/config.yaml');
         });
 
         test('should work without logger', async () => {
@@ -1425,7 +1425,7 @@ environment: production
             mockStorage.readFile.mockResolvedValue('key: value');
             mockYamlLoad.mockReturnValue({ key: 'value' });
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8');
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8');
 
             expect(result).toEqual({ key: 'value' });
             // Should not throw error without logger
@@ -1437,9 +1437,9 @@ environment: production
             mockStorage.readFile.mockResolvedValue('key: value');
             mockYamlLoad.mockReturnValue({ key: 'value' });
 
-            await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', undefined, mockLogger);
+            await loadConfigFromDirectory('/project/.myapp', 'config.yaml', undefined, mockLogger);
 
-            expect(mockStorage.readFile).toHaveBeenCalledWith('/project/.kodrdriv/config.yaml', 'utf8');
+            expect(mockStorage.readFile).toHaveBeenCalledWith('/project/.myapp/config.yaml', 'utf8');
         });
 
         test('should handle YAML parsing errors', async () => {
@@ -1450,11 +1450,11 @@ environment: production
                 throw new Error('Invalid YAML');
             });
 
-            const result = await loadConfigFromDirectory('/project/.kodrdriv', 'config.yaml', 'utf8', mockLogger);
+            const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
             expect(mockLogger.debug).toHaveBeenCalledWith(
-                expect.stringContaining('Error loading config from /project/.kodrdriv/config.yaml: Invalid YAML')
+                expect.stringContaining('Error loading config from /project/.myapp/config.yaml: Invalid YAML')
             );
         });
     });
@@ -1909,7 +1909,7 @@ environment: production
     describe('loadHierarchicalConfig - with field overlaps', () => {
         test('should apply field overlaps during hierarchical loading', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 logger: mockLogger,
@@ -1921,13 +1921,13 @@ environment: production
 
             // Mock directory discovery to find both directories
             mockStorage.exists
-                .mockResolvedValueOnce(true)    // subdir/.kodrdriv exists
-                .mockResolvedValueOnce(true)    // project/.kodrdriv exists  
+                .mockResolvedValueOnce(true)    // subdir/.myapp exists
+                .mockResolvedValueOnce(true)    // project/.myapp exists  
                 .mockResolvedValueOnce(false);  // parent directory doesn't exist
 
             mockStorage.isDirectoryReadable
-                .mockResolvedValueOnce(true)    // subdir/.kodrdriv readable
-                .mockResolvedValueOnce(true);   // project/.kodrdriv readable
+                .mockResolvedValueOnce(true)    // subdir/.myapp readable
+                .mockResolvedValueOnce(true);   // project/.myapp readable
 
             // Mock file existence and readability for config files
             mockStorage.exists
@@ -1960,8 +1960,8 @@ environment: production
             });
 
             expect(result.discoveredDirs).toEqual([
-                { path: '/project/subdir/.kodrdriv', level: 0 },
-                { path: '/project/.kodrdriv', level: 1 }
+                { path: '/project/subdir/.myapp', level: 0 },
+                { path: '/project/.myapp', level: 1 }
             ]);
 
             expect(result.errors).toEqual([]);
@@ -1969,7 +1969,7 @@ environment: production
 
         test('should work with hierarchical loading when no fieldOverlaps configured', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 logger: mockLogger
@@ -1978,13 +1978,13 @@ environment: production
 
             // Mock directory discovery
             mockStorage.exists
-                .mockResolvedValueOnce(true)    // subdir/.kodrdriv exists
-                .mockResolvedValueOnce(true)    // project/.kodrdriv exists
+                .mockResolvedValueOnce(true)    // subdir/.myapp exists
+                .mockResolvedValueOnce(true)    // project/.myapp exists
                 .mockResolvedValueOnce(false);  // parent directory doesn't exist
 
             mockStorage.isDirectoryReadable
-                .mockResolvedValueOnce(true)    // subdir/.kodrdriv readable
-                .mockResolvedValueOnce(true);   // project/.kodrdriv readable
+                .mockResolvedValueOnce(true)    // subdir/.myapp readable
+                .mockResolvedValueOnce(true);   // project/.myapp readable
 
             // Mock file existence and readability for config files
             mockStorage.exists
@@ -2049,7 +2049,7 @@ describe('Additional Test Coverage for Edge Cases and Complex Scenarios', () => 
 
     describe('Complex Path Resolution Scenarios', () => {
         test('should handle Windows-style paths in configuration', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const yamlContent = 'outputDir: .\\dist\ninputFile: ..\\src\\index.ts';
             const parsedConfig = { outputDir: '.\\dist', inputFile: '..\\src\\index.ts' };
 
@@ -2064,7 +2064,7 @@ describe('Additional Test Coverage for Edge Cases and Complex Scenarios', () => 
 
             mockPathResolve.mockImplementation((base: string, relative: string) => {
                 // Simulate Windows path resolution
-                if (relative === '.\\dist') return '/project/.kodrdriv/dist';
+                if (relative === '.\\dist') return '/project/.myapp/dist';
                 if (relative === '..\\src\\index.ts') return '/project/src/index.ts';
                 return relative;
             });
@@ -2078,13 +2078,13 @@ describe('Additional Test Coverage for Edge Cases and Complex Scenarios', () => 
             );
 
             expect(result).toEqual({
-                outputDir: '/project/.kodrdriv/dist',
+                outputDir: '/project/.myapp/dist',
                 inputFile: '/project/src/index.ts'
             });
         });
 
         test('should handle paths with special characters and spaces', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const yamlContent = 'paths:\n  special: "./my folder/file name.txt"\n  unicode: "./测试/文件.txt"';
             const parsedConfig = {
                 paths: {
@@ -2113,14 +2113,14 @@ describe('Additional Test Coverage for Edge Cases and Complex Scenarios', () => 
 
             expect(result).toEqual({
                 paths: {
-                    special: '/project/.kodrdriv/my folder/file name.txt',
-                    unicode: '/project/.kodrdriv/测试/文件.txt'
+                    special: '/project/.myapp/my folder/file name.txt',
+                    unicode: '/project/.myapp/测试/文件.txt'
                 }
             });
         });
 
         test('should handle deeply nested path fields with complex dot notation', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const yamlContent = `
 deeply:
   nested:
@@ -2181,12 +2181,12 @@ deeply:
                     nested: {
                         config: {
                             paths: {
-                                primary: '/project/.kodrdriv/data/primary',
-                                secondary: '/project/.kodrdriv/data/secondary'
+                                primary: '/project/.myapp/data/primary',
+                                secondary: '/project/.myapp/data/secondary'
                             },
                             arrays: {
-                                includes: ['/project/.kodrdriv/src', '/project/.kodrdriv/lib'],
-                                excludes: ['/project/.kodrdriv/temp']
+                                includes: ['/project/.myapp/src', '/project/.myapp/lib'],
+                                excludes: ['/project/.myapp/temp']
                             }
                         }
                     }
@@ -2195,7 +2195,7 @@ deeply:
         });
 
         test('should handle path arrays with mixed absolute and relative paths', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const yamlContent = `
 searchPaths:
   - "./local/path"
@@ -2220,7 +2220,7 @@ searchPaths:
 
             mockPathResolve.mockImplementation((base: string, relative: string) => {
                 if (!relative || relative === '') return relative;
-                if (relative === './local/path') return '/project/.kodrdriv/local/path';
+                if (relative === './local/path') return '/project/.myapp/local/path';
                 if (relative === '../relative/up') return '/project/relative/up';
                 return relative;
             });
@@ -2236,7 +2236,7 @@ searchPaths:
 
             expect(result).toEqual({
                 searchPaths: [
-                    '/project/.kodrdriv/local/path',  // Relative resolved
+                    '/project/.myapp/local/path',  // Relative resolved
                     '/absolute/path',                 // Absolute unchanged
                     '/project/relative/up',           // Relative up resolved
                     '~/home/path',                    // Tilde unchanged (absolute)
@@ -2250,7 +2250,7 @@ searchPaths:
     describe('Complex Error Scenarios', () => {
         test('should handle permission denied during directory traversal', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/restricted/project',
                 logger: mockLogger
@@ -2274,7 +2274,7 @@ searchPaths:
 
             // Should find one directory despite errors in others
             expect(result).toEqual([
-                { path: '/restricted/.kodrdriv', level: 1 }
+                { path: '/restricted/.myapp', level: 1 }
             ]);
             expect(mockLogger.debug).toHaveBeenCalledWith(
                 expect.stringContaining('Error checking config directory')
@@ -2286,7 +2286,7 @@ searchPaths:
 
         test('should handle network filesystem errors during config loading', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/nfs/project',
                 logger: mockLogger
@@ -2318,7 +2318,7 @@ searchPaths:
         });
 
         test('should handle corrupted YAML files gracefully', async () => {
-            const configDir = '/project/.kodrdriv';
+            const configDir = '/project/.myapp';
             const configFileName = 'config.yaml';
 
             mockStorage.exists.mockResolvedValue(true);
@@ -2338,7 +2338,7 @@ searchPaths:
 
         test('should handle file system race conditions', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 logger: mockLogger
@@ -2362,7 +2362,7 @@ searchPaths:
     describe('Complex Integration Scenarios', () => {
         test('should handle maximum directory traversal with mixed success/failure', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/very/deep/project/structure/subdir',
                 maxLevels: 6,
@@ -2395,8 +2395,8 @@ searchPaths:
             const result = await discoverConfigDirectories(options);
 
             expect(result).toEqual([
-                { path: '/very/deep/project/structure/.kodrdriv', level: 1 },
-                { path: '/.kodrdriv', level: 5 }
+                { path: '/very/deep/project/structure/.myapp', level: 1 },
+                { path: '/.myapp', level: 5 }
             ]);
 
             expect(mockLogger.debug).toHaveBeenCalledWith(
@@ -2409,7 +2409,7 @@ searchPaths:
 
         test('should handle hierarchical loading with complex field overlaps and path resolution', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/apps/web',
                 logger: mockLogger,
@@ -2425,10 +2425,10 @@ searchPaths:
 
             // Mock 3-level discovery
             mockStorage.exists
-                .mockResolvedValueOnce(true)    // /project/apps/web/.kodrdriv
-                .mockResolvedValueOnce(true)    // /project/apps/.kodrdriv
-                .mockResolvedValueOnce(true)    // /project/.kodrdriv
-                .mockResolvedValueOnce(false);  // / .kodrdriv
+                .mockResolvedValueOnce(true)    // /project/apps/web/.myapp
+                .mockResolvedValueOnce(true)    // /project/apps/.myapp
+                .mockResolvedValueOnce(true)    // /project/.myapp
+                .mockResolvedValueOnce(false);  // / .myapp
 
             mockStorage.isDirectoryReadable
                 .mockResolvedValueOnce(true)
@@ -2526,22 +2526,22 @@ assets:
 
             expect(result.config).toEqual({
                 build: {
-                    outputDir: '/project/apps/.kodrdriv' // Simplified path resolution
+                    outputDir: '/project/apps/.myapp' // Simplified path resolution
                 },
                 source: {
                     includes: [
-                        '/project/.kodrdriv',        // Base paths only
-                        '/project/apps/.kodrdriv',   // Base paths only
-                        '/project/apps/web/.kodrdriv' // Base paths only
+                        '/project/.myapp',        // Base paths only
+                        '/project/apps/.myapp',   // Base paths only
+                        '/project/apps/web/.myapp' // Base paths only
                     ]
                 },
                 plugins: ['base-plugin', 'apps-plugin', 'web-plugin'], // Appended
                 excludePatterns: ['*.cache'],                           // Overridden (web wins)
                 assets: {
                     paths: [
-                        '/project/apps/web/.kodrdriv',     // Base paths only  
-                        '/project/apps/.kodrdriv',      // Base paths only
-                        '/project/.kodrdriv'            // Base paths only
+                        '/project/apps/web/.myapp',     // Base paths only  
+                        '/project/apps/.myapp',      // Base paths only
+                        '/project/.myapp'            // Base paths only
                     ]
                 }
             });
@@ -3015,7 +3015,7 @@ assets:
     describe('Real-world Configuration Scenarios', () => {
         test('should handle monorepo configuration inheritance', async () => {
             const options: HierarchicalDiscoveryOptions = {
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/monorepo/packages/web-app/src',
                 fieldOverlaps: {

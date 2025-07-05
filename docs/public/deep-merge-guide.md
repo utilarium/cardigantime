@@ -127,9 +127,9 @@ database:
 
 ## Real-World Examples
 
-### KodrDriv Use Case
+### MyApp Use Case
 
-This is perfect for the KodrDriv scenario mentioned in your question:
+This is perfect for the MyApp scenario mentioned in your question:
 
 **`../../.kodrdriv/config.yaml`:**
 ```yaml

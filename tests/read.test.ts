@@ -808,32 +808,32 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/subdir/.kodrdriv'
+                    configDirectory: '/project/subdir/.myapp'
                 }
             };
 
             const mockHierarchicalResult = {
                 config: { api: { timeout: 10000 }, debug: true },
                 discoveredDirs: [
-                    { path: '/project/subdir/.kodrdriv', level: 0 },
-                    { path: '/project/.kodrdriv', level: 1 }
+                    { path: '/project/subdir/.myapp', level: 0 },
+                    { path: '/project/.myapp', level: 1 }
                 ],
                 resolvedConfigDirs: [
-                    { path: '/project/subdir/.kodrdriv', level: 0 },
-                    { path: '/project/.kodrdriv', level: 1 }
+                    { path: '/project/subdir/.myapp', level: 0 },
+                    { path: '/project/.myapp', level: 1 }
                 ],
                 errors: []
             };
 
             mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project/subdir');
 
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLogger.verbose).toHaveBeenCalledWith('Hierarchical configuration discovery enabled');
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 encoding: 'utf8',
@@ -842,9 +842,9 @@ key3: undefined`;
             expect(config).toEqual({
                 api: { timeout: 10000 },
                 debug: true,
-                configDirectory: '/project/subdir/.kodrdriv',
-                discoveredConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
+                configDirectory: '/project/subdir/.myapp',
+                discoveredConfigDirs: ['/project/subdir/.myapp', '/project/.myapp'],
+                resolvedConfigDirs: ['/project/subdir/.myapp', '/project/.myapp']
             });
         });
 
@@ -854,7 +854,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/subdir/.kodrdriv',
+                    configDirectory: '/project/subdir/.myapp',
                     fieldOverlaps: {
                         'features': 'append',
                         'excludePatterns': 'prepend'
@@ -869,24 +869,24 @@ key3: undefined`;
                     api: { timeout: 5000 }
                 },
                 discoveredDirs: [
-                    { path: '/project/subdir/.kodrdriv', level: 0 },
-                    { path: '/project/.kodrdriv', level: 1 }
+                    { path: '/project/subdir/.myapp', level: 0 },
+                    { path: '/project/.myapp', level: 1 }
                 ],
                 resolvedConfigDirs: [
-                    { path: '/project/subdir/.kodrdriv', level: 0 },
-                    { path: '/project/.kodrdriv', level: 1 }
+                    { path: '/project/subdir/.myapp', level: 0 },
+                    { path: '/project/.myapp', level: 1 }
                 ],
                 errors: []
             };
 
             mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project/subdir');
 
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 encoding: 'utf8',
@@ -901,9 +901,9 @@ key3: undefined`;
                 features: ['auth', 'logging', 'analytics'],
                 excludePatterns: ['*.log', '*.tmp'],
                 api: { timeout: 5000 },
-                configDirectory: '/project/subdir/.kodrdriv',
-                discoveredConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/subdir/.kodrdriv', '/project/.kodrdriv']
+                configDirectory: '/project/subdir/.myapp',
+                discoveredConfigDirs: ['/project/subdir/.myapp', '/project/.myapp'],
+                resolvedConfigDirs: ['/project/subdir/.myapp', '/project/.myapp']
             });
         });
 
@@ -913,7 +913,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/subdir/.kodrdriv'
+                    configDirectory: '/project/subdir/.myapp'
                     // fieldOverlaps is undefined - should work fine
                 }
             };
@@ -921,22 +921,22 @@ key3: undefined`;
             const mockHierarchicalResult = {
                 config: { api: { timeout: 10000 }, debug: true },
                 discoveredDirs: [
-                    { path: '/project/subdir/.kodrdriv', level: 0 }
+                    { path: '/project/subdir/.myapp', level: 0 }
                 ],
                 resolvedConfigDirs: [
-                    { path: '/project/subdir/.kodrdriv', level: 0 }
+                    { path: '/project/subdir/.myapp', level: 0 }
                 ],
                 errors: []
             };
 
             mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project/subdir');
 
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project/subdir',
                 encoding: 'utf8',
@@ -947,9 +947,9 @@ key3: undefined`;
             expect(config).toEqual({
                 api: { timeout: 10000 },
                 debug: true,
-                configDirectory: '/project/subdir/.kodrdriv',
-                discoveredConfigDirs: ['/project/subdir/.kodrdriv'],
-                resolvedConfigDirs: ['/project/subdir/.kodrdriv']
+                configDirectory: '/project/subdir/.myapp',
+                discoveredConfigDirs: ['/project/subdir/.myapp'],
+                resolvedConfigDirs: ['/project/subdir/.myapp']
             });
         });
 
@@ -959,37 +959,37 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
             const mockHierarchicalResult = {
                 config: { setting: 'value' },
                 discoveredDirs: [
-                    { path: '/project/.kodrdriv', level: 0 },
-                    { path: '/.kodrdriv', level: 1 }
+                    { path: '/project/.myapp', level: 0 },
+                    { path: '/.myapp', level: 1 }
                 ],
                 resolvedConfigDirs: [
-                    { path: '/project/.kodrdriv', level: 0 },
-                    { path: '/.kodrdriv', level: 1 }
+                    { path: '/project/.myapp', level: 0 },
+                    { path: '/.myapp', level: 1 }
                 ],
                 errors: []
             };
 
             mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project');
 
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLogger.verbose).toHaveBeenCalledWith('Hierarchical discovery found 2 configuration directories');
-            expect(mockLogger.debug).toHaveBeenCalledWith('  Level 0: /project/.kodrdriv');
-            expect(mockLogger.debug).toHaveBeenCalledWith('  Level 1: /.kodrdriv');
+            expect(mockLogger.debug).toHaveBeenCalledWith('  Level 0: /project/.myapp');
+            expect(mockLogger.debug).toHaveBeenCalledWith('  Level 1: /.myapp');
             expect(config).toEqual({
                 setting: 'value',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv', '/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv', '/.kodrdriv']
+                configDirectory: '/project/.myapp',
+                discoveredConfigDirs: ['/project/.myapp', '/.myapp'],
+                resolvedConfigDirs: ['/project/.myapp', '/.myapp']
             });
         });
 
@@ -999,7 +999,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
@@ -1011,14 +1011,14 @@ key3: undefined`;
             };
 
             mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project');
 
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLogger.verbose).toHaveBeenCalledWith('No configuration directories found in hierarchy');
             expect(config).toEqual({
-                configDirectory: '/project/.kodrdriv',
+                configDirectory: '/project/.myapp',
                 discoveredConfigDirs: [],
                 resolvedConfigDirs: []
             });
@@ -1030,33 +1030,33 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
             const mockHierarchicalResult = {
                 config: { key: 'value' },
-                discoveredDirs: [{ path: '/project/.kodrdriv', level: 0 }],
-                resolvedConfigDirs: [{ path: '/project/.kodrdriv', level: 0 }],
+                discoveredDirs: [{ path: '/project/.myapp', level: 0 }],
+                resolvedConfigDirs: [{ path: '/project/.myapp', level: 0 }],
                 errors: [
-                    'Permission denied for /restricted/.kodrdriv',
-                    'Invalid YAML in /other/.kodrdriv/config.yaml'
+                    'Permission denied for /restricted/.myapp',
+                    'Invalid YAML in /other/.myapp/config.yaml'
                 ]
             };
 
             mockLoadHierarchicalConfig.mockResolvedValue(mockHierarchicalResult);
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project');
 
             const config = await read(baseArgs, hierarchicalOptions);
 
-            expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Permission denied for /restricted/.kodrdriv');
-            expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Invalid YAML in /other/.kodrdriv/config.yaml');
+            expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Permission denied for /restricted/.myapp');
+            expect(mockLogger.warn).toHaveBeenCalledWith('Hierarchical config warning: Invalid YAML in /other/.myapp/config.yaml');
             expect(config).toEqual({
                 key: 'value',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.myapp',
+                discoveredConfigDirs: ['/project/.myapp'],
+                resolvedConfigDirs: ['/project/.myapp']
             });
         });
 
@@ -1066,7 +1066,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
@@ -1085,9 +1085,9 @@ key3: undefined`;
             expect(mockLogger.verbose).toHaveBeenCalledWith('Falling back to single directory configuration loading');
             expect(config).toEqual({
                 fallback: 'config',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.myapp',
+                discoveredConfigDirs: ['/project/.myapp'],
+                resolvedConfigDirs: ['/project/.myapp']
             });
         });
 
@@ -1097,7 +1097,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
@@ -1116,9 +1116,9 @@ key3: undefined`;
             expect(mockLogger.verbose).toHaveBeenCalledWith('Falling back to single directory configuration loading');
             expect(config).toEqual({
                 fallback: 'config',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.myapp',
+                discoveredConfigDirs: ['/project/.myapp'],
+                resolvedConfigDirs: ['/project/.myapp']
             });
         });
 
@@ -1128,7 +1128,7 @@ key3: undefined`;
                 features: ['config'] as Feature[], // No hierarchical feature
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
@@ -1144,9 +1144,9 @@ key3: undefined`;
             expect(mockLoadHierarchicalConfig).not.toHaveBeenCalled();
             expect(config).toEqual({
                 single: 'directory',
-                configDirectory: '/project/.kodrdriv',
-                discoveredConfigDirs: ['/project/.kodrdriv'],
-                resolvedConfigDirs: ['/project/.kodrdriv']
+                configDirectory: '/project/.myapp',
+                discoveredConfigDirs: ['/project/.myapp'],
+                resolvedConfigDirs: ['/project/.myapp']
             });
         });
 
@@ -1156,7 +1156,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv'
+                    configDirectory: '/project/.myapp'
                 }
             };
 
@@ -1171,7 +1171,7 @@ key3: undefined`;
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(config).toEqual({
-                configDirectory: '/project/.kodrdriv',
+                configDirectory: '/project/.myapp',
                 discoveredConfigDirs: [],
                 resolvedConfigDirs: []
             });
@@ -1183,7 +1183,7 @@ key3: undefined`;
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/complex/nested/path/.kodrdriv',
+                    configDirectory: '/complex/nested/path/.myapp',
                     configFile: 'custom.yaml',
                     encoding: 'utf16le'
                 }
@@ -1196,13 +1196,13 @@ key3: undefined`;
                 errors: []
             });
 
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/complex/nested/path');
 
             await read(baseArgs, hierarchicalOptions);
 
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'custom.yaml',
                 startingDir: '/complex/nested/path',
                 encoding: 'utf16le',
@@ -2023,7 +2023,7 @@ mixedArray:
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv',
+                    configDirectory: '/project/.myapp',
                     pathResolution: {
                         pathFields: ['buildDir', 'sourceDir'],
                         resolvePathArray: ['includePaths']
@@ -2038,13 +2038,13 @@ mixedArray:
                 errors: []
             });
 
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project');
 
             await read(baseArgs, hierarchicalOptions);
 
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 encoding: 'utf8',
@@ -2060,7 +2060,7 @@ mixedArray:
                 features: ['config', 'hierarchical'] as Feature[],
                 defaults: {
                     ...baseOptions.defaults,
-                    configDirectory: '/project/.kodrdriv',
+                    configDirectory: '/project/.myapp',
                     pathResolution: undefined
                 }
             };
@@ -2072,13 +2072,13 @@ mixedArray:
                 errors: []
             });
 
-            mockPathBasename.mockReturnValue('.kodrdriv');
+            mockPathBasename.mockReturnValue('.myapp');
             mockPathDirname.mockReturnValue('/project');
 
             await read(baseArgs, hierarchicalOptions);
 
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
-                configDirName: '.kodrdriv',
+                configDirName: '.myapp',
                 configFileName: 'config.yaml',
                 startingDir: '/project',
                 encoding: 'utf8',

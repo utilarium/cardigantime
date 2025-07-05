@@ -263,7 +263,7 @@ Hierarchical configuration:
 ```
 
 **Use cases:**
-- **`discoveredConfigDirs`**: Pass to other tools that need to process the same directory hierarchy (like RiotPrompt in KodrDriv), template generation, hierarchical operations
+- **`discoveredConfigDirs`**: Pass to other tools that need to process the same directory hierarchy (like RiotPrompt in MyApp), template generation, hierarchical operations
 - **`resolvedConfigDirs`**: Configuration debugging, validation that expected sources were found, configuration-specific processing
 - **Combined**: Full understanding of what was searched vs. what contributed to the final configuration
 
