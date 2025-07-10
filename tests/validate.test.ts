@@ -357,7 +357,7 @@ describe('validate', () => {
 
         test('should handle ZodRecord types', () => {
             const schema = z.object({
-                a: z.record(z.string()),
+                a: z.record(z.string(), z.string()),
                 b: z.number()
             });
             expect(listZodKeys(schema)).toEqual(['a', 'b']);
@@ -405,7 +405,7 @@ describe('validate', () => {
                     deep: z.string(),
                     array: z.array(z.object({ item: z.number() }))
                 }),
-                record: z.record(z.string()),
+                record: z.record(z.string(), z.string()),
                 any: z.any()
             });
             expect(listZodKeys(schema)).toEqual([
@@ -561,7 +561,7 @@ describe('validate', () => {
             // Only plain objects get recursed into
             const result = listObjectKeys(obj);
             expect(result).toContain('a');     // string primitive
-            expect(result).toContain('c');     // function (treated as primitive)  
+            expect(result).toContain('c');     // function (treated as primitive)
             expect(result).toContain('e.nested'); // plain object (recursed into)
             // Note: Date and RegExp objects are filtered out by isPlainObject so 'b' and 'd' won't appear
         });
@@ -626,7 +626,7 @@ describe('validate', () => {
 
         test('should allow extra keys under ZodRecord types', () => {
             const recordSchema = z.object({
-                metadata: z.record(z.string()),
+                metadata: z.record(z.string(), z.string()),
                 config: z.object({ port: z.number() })
             });
             const config = {
@@ -659,9 +659,9 @@ describe('validate', () => {
 
         test('should handle optional and nullable wrappers around records', () => {
             const optionalRecordSchema = z.object({
-                optional: z.record(z.string()).optional(),
-                nullable: z.record(z.number()).nullable(),
-                both: z.record(z.boolean()).optional().nullable()
+                optional: z.record(z.string(), z.string()).optional(),
+                nullable: z.record(z.string(), z.number()).nullable(),
+                both: z.record(z.string(), z.boolean()).optional().nullable()
             });
             const config = {
                 'optional.custom': 'allowed',
@@ -675,7 +675,7 @@ describe('validate', () => {
         test('should handle nested records', () => {
             const nestedRecordSchema = z.object({
                 level1: z.object({
-                    level2: z.record(z.string())
+                    level2: z.record(z.string(), z.string())
                 })
             });
             const config = {
@@ -688,7 +688,7 @@ describe('validate', () => {
 
         test('should still catch extra keys outside of record prefixes', () => {
             const mixedSchema = z.object({
-                metadata: z.record(z.string()),
+                metadata: z.record(z.string(), z.string()),
                 config: z.object({ port: z.number() })
             });
             const config = {
@@ -704,8 +704,8 @@ describe('validate', () => {
 
         test('should handle multiple record types in one schema', () => {
             const multiRecordSchema = z.object({
-                metadata: z.record(z.string()),
-                data: z.record(z.number()),
+                metadata: z.record(z.string(), z.string()),
+                data: z.record(z.string(), z.number()),
                 config: z.object({ port: z.number() })
             });
             const config = {

@@ -93,10 +93,8 @@ export default defineConfig({
             ],
             external: [
                 'commander',
-                'dotenv',
                 'glob',
                 'js-yaml',
-                'winston',
                 'zod',
                 // Node built-ins
                 'fs',
@@ -144,4 +142,4 @@ export default defineConfig({
         minify: false,
         sourcemap: true
     },
-}); 
+});

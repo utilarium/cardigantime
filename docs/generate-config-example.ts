@@ -66,7 +66,7 @@ const MyAppConfigSchema = z.object({
     allowedOrigins: z.array(z.string()).default(['http://localhost:3000']),
 
     // Custom metadata as a record
-    metadata: z.record(z.string()).default({}),
+    metadata: z.record(z.string(), z.string()).default({}),
 });
 
 // Create a Cardigantime instance

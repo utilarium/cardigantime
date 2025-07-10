@@ -40,7 +40,7 @@ const ProjectConfigSchema = z.object({
     timeout: z.number().default(5000),
     retries: z.number().default(3),
   }),
-  features: z.record(z.boolean()).default({}),
+  features: z.record(z.string(), z.boolean()).default({}),
   logging: z.object({
     level: z.enum(['error', 'warn', 'info', 'debug']).default('info'),
     outputs: z.array(z.string()).default(['console']),
@@ -156,7 +156,7 @@ const AppConfigSchema = z.object({
   }),
   
   // Feature flags with validation
-  features: z.record(z.boolean()).default({}),
+  features: z.record(z.string(), z.boolean()).default({}),
   
   // Advanced logging configuration
   logging: z.object({
@@ -201,7 +201,7 @@ const AppConfigSchema = z.object({
   integrations: z.object({
     email: z.object({
       provider: z.enum(['smtp', 'sendgrid', 'ses']),
-      config: z.record(z.any()), // Provider-specific config
+      config: z.record(z.string(), z.any()), // Provider-specific config
     }).optional(),
     
     monitoring: z.object({

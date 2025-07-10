@@ -99,8 +99,8 @@ describe('schema-defaults', () => {
 
         test('should handle record types', () => {
             const schema = z.object({
-                metadata: z.record(z.string()),
-                numbers: z.record(z.number())
+                metadata: z.record(z.string(), z.string()),
+                numbers: z.record(z.string(), z.number())
             });
 
             const result = extractSchemaDefaults(schema);
@@ -131,7 +131,7 @@ describe('schema-defaults', () => {
                     baseUrl: z.string().default('https://api.example.com'),
                     timeout: z.number().default(5000),
                     retries: z.number().default(3),
-                    headers: z.record(z.string()).default({}),
+                    headers: z.record(z.string(), z.string()).default({}),
                     endpoints: z.array(z.string()).default(['/health', '/status'])
                 }),
                 database: z.object({

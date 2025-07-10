@@ -8,22 +8,22 @@ export { ArgumentError, ConfigurationError, FileSystemError };
 
 /**
  * Recursively extracts all keys from a Zod schema in dot notation.
- * 
+ *
  * This function traverses a Zod schema structure and builds a flat list
  * of all possible keys, using dot notation for nested objects. It handles
  * optional/nullable types by unwrapping them and supports arrays by
  * introspecting their element type.
- * 
+ *
  * Special handling for:
  * - ZodOptional/ZodNullable: Unwraps to get the underlying type
  * - ZodAny/ZodRecord: Accepts any keys, returns the prefix or empty array
  * - ZodArray: Introspects the element type
  * - ZodObject: Recursively processes all shape properties
- * 
+ *
  * @param schema - The Zod schema to introspect
  * @param prefix - Internal parameter for building nested key paths
  * @returns Array of strings representing all possible keys in dot notation
- * 
+ *
  * @example
  * ```typescript
  * const schema = z.object({
@@ -33,33 +33,28 @@ export { ArgumentError, ConfigurationError, FileSystemError };
  *   }),
  *   debug: z.boolean()
  * });
- * 
+ *
  * const keys = listZodKeys(schema);
  * // Returns: ['user.name', 'user.settings.theme', 'debug']
  * ```
  */
 export const listZodKeys = (schema: z.ZodTypeAny, prefix = ''): string[] => {
-    // Check if schema has unwrap method (which both ZodOptional and ZodNullable have)
-    if (schema._def && (schema._def.typeName === 'ZodOptional' || schema._def.typeName === 'ZodNullable')) {
-        // Use type assertion to handle the unwrap method
-        const unwrappable = schema as z.ZodOptional<any> | z.ZodNullable<any>;
-        return listZodKeys(unwrappable.unwrap(), prefix);
+    // Handle ZodOptional and ZodNullable - unwrap to get the underlying type
+    if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+        return listZodKeys(schema.unwrap() as z.ZodTypeAny, prefix);
     }
 
     // Handle ZodAny and ZodRecord - these accept any keys, so don't introspect
-    if (schema._def && (schema._def.typeName === 'ZodAny' || schema._def.typeName === 'ZodRecord')) {
+    if (schema instanceof z.ZodAny || schema instanceof z.ZodRecord) {
         return prefix ? [prefix] : [];
     }
 
-    if (schema._def && schema._def.typeName === 'ZodArray') {
-        // Use type assertion to handle the element property
-        const arraySchema = schema as z.ZodArray<any>;
-        return listZodKeys(arraySchema.element, prefix);
+    if (schema instanceof z.ZodArray) {
+        return listZodKeys(schema.element as z.ZodTypeAny, prefix);
     }
-    if (schema._def && schema._def.typeName === 'ZodObject') {
-        // Use type assertion to handle the shape property
-        const objectSchema = schema as z.ZodObject<any>;
-        return Object.entries(objectSchema.shape).flatMap(([key, subschema]) => {
+
+    if (schema instanceof z.ZodObject) {
+        return Object.entries(schema.shape).flatMap(([key, subschema]) => {
             const fullKey = prefix ? `${prefix}.${key}` : key;
             const nested = listZodKeys(subschema as z.ZodTypeAny, fullKey);
             return nested.length ? nested : fullKey;
@@ -70,7 +65,7 @@ export const listZodKeys = (schema: z.ZodTypeAny, prefix = ''): string[] => {
 
 /**
  * Type guard to check if a value is a plain object (not array, null, or other types).
- * 
+ *
  * @param value - The value to check
  * @returns True if the value is a plain object
  */
@@ -124,26 +119,26 @@ export const listObjectKeys = (obj: Record<string, unknown>, prefix = ''): strin
 
 /**
  * Validates that the configuration object contains only keys allowed by the schema.
- * 
+ *
  * This function prevents configuration errors by detecting typos or extra keys
  * that aren't defined in the Zod schema. It intelligently handles:
  * - ZodRecord types that accept arbitrary keys
  * - Nested objects and their key structures
  * - Arrays and their element key structures
- * 
+ *
  * The function throws a ConfigurationError if extra keys are found, providing
  * helpful information about what keys are allowed vs. what was found.
- * 
+ *
  * @param mergedSources - The merged configuration object to validate
  * @param fullSchema - The complete Zod schema including base and user schemas
  * @param logger - Logger for error reporting
  * @throws {ConfigurationError} When extra keys are found that aren't in the schema
- * 
+ *
  * @example
  * ```typescript
  * const schema = z.object({ name: z.string(), age: z.number() });
  * const config = { name: 'John', age: 30, typo: 'invalid' };
- * 
+ *
  * checkForExtraKeys(config, schema, console);
  * // Throws: ConfigurationError with details about 'typo' being an extra key
  * ```
@@ -157,20 +152,18 @@ export const checkForExtraKeys = (mergedSources: object, fullSchema: ZodObject<a
 
     // Find all prefixes that are ZodRecord types
     const findRecordPrefixes = (schema: z.ZodTypeAny, prefix = ''): void => {
-        if (schema._def && (schema._def.typeName === 'ZodOptional' || schema._def.typeName === 'ZodNullable')) {
-            const unwrappable = schema as z.ZodOptional<any> | z.ZodNullable<any>;
-            findRecordPrefixes(unwrappable.unwrap(), prefix);
+        if (schema instanceof z.ZodOptional || schema instanceof z.ZodNullable) {
+            findRecordPrefixes(schema.unwrap() as z.ZodTypeAny, prefix);
             return;
         }
 
-        if (schema._def && (schema._def.typeName === 'ZodAny' || schema._def.typeName === 'ZodRecord')) {
+        if (schema instanceof z.ZodAny || schema instanceof z.ZodRecord) {
             if (prefix) recordPrefixes.add(prefix);
             return;
         }
 
-        if (schema._def && schema._def.typeName === 'ZodObject') {
-            const objectSchema = schema as z.ZodObject<any>;
-            Object.entries(objectSchema.shape).forEach(([key, subschema]) => {
+        if (schema instanceof z.ZodObject) {
+            Object.entries(schema.shape).forEach(([key, subschema]) => {
                 const fullKey = prefix ? `${prefix}.${key}` : key;
                 findRecordPrefixes(subschema as z.ZodTypeAny, fullKey);
             });
@@ -203,11 +196,11 @@ export const checkForExtraKeys = (mergedSources: object, fullSchema: ZodObject<a
 
 /**
  * Validates that a configuration directory exists and is accessible.
- * 
+ *
  * This function performs file system checks to ensure the configuration
  * directory can be used. It handles the isRequired flag to determine
  * whether a missing directory should cause an error or be silently ignored.
- * 
+ *
  * @param configDirectory - Path to the configuration directory
  * @param isRequired - Whether the directory must exist
  * @param logger - Optional logger for debug information
@@ -230,30 +223,30 @@ const validateConfigDirectory = async (configDirectory: string, isRequired: bool
 
 /**
  * Validates a configuration object against the combined Zod schema.
- * 
+ *
  * This is the main validation function that:
  * 1. Validates the configuration directory (if config feature enabled)
  * 2. Combines the base ConfigSchema with user-provided schema shape
  * 3. Checks for extra keys not defined in the schema
  * 4. Validates all values against their schema definitions
  * 5. Provides detailed error reporting for validation failures
- * 
+ *
  * The validation is comprehensive and catches common configuration errors
  * including typos, missing required fields, wrong types, and invalid values.
- * 
+ *
  * @template T - The Zod schema shape type for configuration validation
  * @param config - The merged configuration object to validate
  * @param options - Cardigantime options containing schema, defaults, and logger
  * @throws {ConfigurationError} When configuration validation fails
  * @throws {FileSystemError} When configuration directory validation fails
- * 
+ *
  * @example
  * ```typescript
  * const schema = z.object({
  *   apiKey: z.string().min(1),
  *   timeout: z.number().positive(),
  * });
- * 
+ *
  * await validate(config, {
  *   configShape: schema.shape,
  *   defaults: { configDirectory: './config', isRequired: true },
@@ -266,8 +259,8 @@ const validateConfigDirectory = async (configDirectory: string, isRequired: bool
 export const validate = async <T extends z.ZodRawShape>(config: z.infer<ZodObject<T & typeof ConfigSchema.shape>>, options: Options<T>): Promise<void> => {
     const logger = options.logger;
 
-    if (options.features.includes('config') && config.configDirectory) {
-        await validateConfigDirectory(config.configDirectory, options.defaults.isRequired, logger);
+    if (options.features.includes('config') && (config as any).configDirectory) {
+        await validateConfigDirectory((config as any).configDirectory, options.defaults.isRequired, logger);
     }
 
     // Combine the base schema with the user-provided shape
