@@ -64,6 +64,28 @@ describe('FileSystemError', () => {
         expect(error.originalError).toBe(originalError);
     });
 
+    it('should create a directory creation failed error with default fallback message', () => {
+        const errorWithNoMsg = new Error();
+        const error = FileSystemError.directoryCreationFailed('/output', errorWithNoMsg);
+
+        expect(error.errorType).toBe('creation_failed');
+        expect(error.message).toBe('Failed to create directory: Unknown error');
+        expect(error.path).toBe('/output');
+        expect(error.operation).toBe('directory_create');
+        expect(error.originalError).toBe(errorWithNoMsg);
+    });
+
+    it('should create an operation failed error with default fallback message', () => {
+        const errorWithNoMsg = new Error();
+        const error = FileSystemError.operationFailed('read', '/src', errorWithNoMsg);
+
+        expect(error.errorType).toBe('operation_failed');
+        expect(error.message).toBe('Failed to read: Unknown error');
+        expect(error.path).toBe('/src');
+        expect(error.operation).toBe('read');
+        expect(error.originalError).toBe(errorWithNoMsg);
+    });
+
     it('should create a file not found error using static method', () => {
         const error = FileSystemError.fileNotFound('/config/app.yaml');
 
