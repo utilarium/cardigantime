@@ -931,7 +931,8 @@ environment: production
                 // Mock discovery
                 mockStorage.exists
                     .mockResolvedValueOnce(true)    // /project/subdir/.myapp
-                    .mockResolvedValueOnce(true);   // /project/.myapp
+                    .mockResolvedValueOnce(true)    // /project/.myapp
+                    .mockResolvedValueOnce(false);  // Stop discovery at root
 
                 mockStorage.isDirectoryReadable
                     .mockResolvedValueOnce(true)
@@ -986,16 +987,16 @@ environment: production
                 const result = await loadHierarchicalConfig(options);
 
                 // Verify that hierarchical config loading works with path resolution
-                // The actual result shows that the parent config is being used, which is expected
-                // given our current mock setup. What's important is that path resolution works.
+                // The child config overrides the parent config (standard behavior)
+                // but retains resolved paths relative to their respective directories.
                 expect(result.config).toEqual({
-                    outputDir: '/project/.myapp/build',
-                    includes: ['/project/.myapp/src']
+                    outputDir: '/project/apps/.myapp/dist',
+                    includes: ['/project/subdir/.myapp/src', '/project/subdir/.myapp/tests']
                 });
 
                 // Verify that path resolution occurred
-                expect(mockPathResolve).toHaveBeenCalledWith('/project/.myapp', './build');
                 expect(mockPathResolve).toHaveBeenCalledWith('/project/.myapp', './src');
+                expect(mockPathResolve).toHaveBeenCalledWith('/project/subdir/.myapp', './dist');
             });
         });
 
@@ -1241,7 +1242,8 @@ environment: production
             // Mock discovery finding 2 directories
             mockStorage.exists
                 .mockResolvedValueOnce(true)    // /project/subdir/.myapp exists
-                .mockResolvedValueOnce(true);   // /project/.myapp exists
+                .mockResolvedValueOnce(true)    // /project/.myapp exists
+                .mockResolvedValueOnce(false);  // /.myapp does not exist (stop discovery)
 
             mockStorage.isDirectoryReadable
                 .mockResolvedValueOnce(true)    // Both readable
@@ -2293,7 +2295,8 @@ searchPaths:
             };
 
             // Mock discovery succeeding
-            mockStorage.exists.mockResolvedValueOnce(true);
+            mockStorage.exists.mockResolvedValueOnce(true)
+                              .mockResolvedValueOnce(false); // Stop discovery at root
             mockStorage.isDirectoryReadable.mockResolvedValueOnce(true);
 
             // Mock config loading completely failing (file doesn't exist for loading)
