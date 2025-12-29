@@ -53,6 +53,15 @@ describe('Schema Defaults', () => {
              
              spy.mockRestore();
         });
+
+        it('should return undefined for parsing errors in extractConfigFileDefaults', () => {
+            const throwingSchema = z.string().default('val');
+            const spy = vi.spyOn(throwingSchema, 'parse').mockImplementation(() => {
+                throw new Error('Forced error');
+            });
+            expect(extractConfigFileDefaults(throwingSchema)).toBeUndefined();
+            spy.mockRestore();
+        });
     });
 
     describe('extractConfigFileDefaults', () => {
@@ -104,6 +113,17 @@ describe('Schema Defaults', () => {
             // Adjusting the test to reflect reality: 
             // dynamic number defaults ARE included by current implementation logic.
             expect(defaults).toEqual({ static: 'val', dynamic: 123 });
+            
+            // Test actual function exclusion
+            const result = extractConfigFileDefaults(funcSchema);
+            // safeParse returns { fn: () => {} }. Filter removes it.
+            // defaults is {}. filteredData is {}.
+            // merged is {}.
+            // So it returns {}.
+            // It only returns undefined if (keys(defaults) == 0 AND safeParse failed)
+            // But here safeParse succeeded (with empty useful data).
+            // So it returns {}.
+            expect(result).toEqual({});
         });
 
         it('should handle optional and nullable fields by unwrapping', () => {
@@ -176,15 +196,15 @@ describe('Schema Defaults', () => {
             const schema = z.string();
             expect(extractConfigFileDefaults(schema)).toBeUndefined();
         });
-
-        it('should return undefined if ZodDefault parsing fails', () => {
-            const schema = z.string().default('val');
-            // Mocking or forcing failure is hard with ZodDefault unless we pass invalid input type,
-            // but the function parses `undefined`.
-            // We can rely on coverage to tell us if we hit the catch block.
-            // A refinement that throws could trigger it.
-            const throwingSchema = z.string().refine(() => { throw new Error('fail'); }).default('val');
-            expect(extractConfigFileDefaults(throwingSchema)).toBe('val'); // It actually returns default on undefined input usually
+        
+        it('should return undefined if default is a function', () => {
+            // Testing the ZodDefault block where defaultValue is a function
+            const funcDefaultSchema = z.function().default(() => () => {});
+            // extractConfigFileDefaults(funcDefaultSchema)
+            // -> checks instanceof ZodDefault
+            // -> parse(undefined) returns a function
+            // -> typeof defaultValue === 'function' -> return undefined
+            expect(extractConfigFileDefaults(funcDefaultSchema)).toBeUndefined();
         });
     });
 
@@ -205,6 +225,43 @@ describe('Schema Defaults', () => {
              };
              const config = generateDefaultConfig(shape, '/ignored');
              expect(config).toEqual({});
+        });
+        
+        it('should return empty object if defaults is undefined/null', () => {
+            // Hard to trigger defaults=undefined with z.object() wrapper in generateDefaultConfig
+            // as extractSchemaDefaults(z.object({...})) usually returns {} at minimum if safeParse succeeds.
+            // But let's cover the null/undefined check line:
+            // const { configDirectory: _, ...configDefaults } = defaults || {};
+            
+            // We can mock extractSchemaDefaults to return undefined
+            // But we need to export/import it to mock it or refactor.
+            // Alternatively, pass a shape that results in undefined?
+            // z.object() defaults to {}.
+            // Maybe if safeParse fails? But we can't make z.object({}) fail safeParse({}) easily.
+            
+            // This line covers the || {} case?
+            // const defaults = extractSchemaDefaults(fullSchema);
+            // if extractSchemaDefaults returns undefined...
+            // When does extractSchemaDefaults(z.object) return undefined?
+            // "return Object.keys(defaults).length > 0 ? defaults : undefined;"
+            // AND safeParse failed.
+            
+            // So if we have an empty shape z.object({})
+            // defaults = {}
+            // safeParse({}) -> success -> result.data = {}
+            // returns { ...{}, ...{} } -> {}
+            // So it returns object.
+            
+            // What if we make safeParse fail?
+            // z.object({ req: z.string() }) -> safeParse({}) fails (required field missing).
+            // loop over shape: req has no default. defaults = {}.
+            // safeParse fails.
+            // returns defaults if keys > 0 else undefined.
+            // keys=0. returns undefined.
+            
+            const shape = { req: z.string() };
+            const config = generateDefaultConfig(shape, '/ignored');
+            expect(config).toEqual({});
         });
     });
 });
