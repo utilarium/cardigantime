@@ -15,4 +15,6 @@ RELEASE_TITLE.md
 # Documentation site build artifacts
 docs/dist/
 docs/node_modules/
-docs/public/README.md
+docs/public/README.mdagentic-*.md
+.kodrdriv-test-cache.json
+agentic-*.md
