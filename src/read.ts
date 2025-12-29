@@ -211,10 +211,10 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
     let discoveredConfigDirs: string[] = [];
     let resolvedConfigDirs: string[] = [];
 
-        // Check if hierarchical configuration discovery is enabled
-        // Use optional chaining for safety although options.features is defaulted
-        if (options.features && options.features.includes('hierarchical')) {
-            logger.verbose('Hierarchical configuration discovery enabled');
+    // Check if hierarchical configuration discovery is enabled
+    // Use optional chaining for safety although options.features is defaulted
+    if (options.features && options.features.includes('hierarchical')) {
+        logger.verbose('Hierarchical configuration discovery enabled');
 
         try {
             // Extract the config directory name from the path for hierarchical discovery
@@ -340,7 +340,7 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
         } else if (parsedYaml !== null) {
             logger.warn('Ignoring invalid configuration format. Expected an object, got ' + typeof parsedYaml);
         }
-        } catch (error: any) {
+    } catch (error: any) {
         if (error.code === 'ENOENT' || /not found|no such file/i.test(error.message)) {
             logger.verbose('Configuration file not found. Using empty configuration.');
         } else {
