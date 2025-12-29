@@ -51,7 +51,7 @@ const { validate, listZodKeys, listObjectKeys, checkForExtraKeys } = await impor
 // --- Test Suite ---
 
 describe('validate', () => {
-    let mockLogger: Record<keyof Logger, ReturnType<typeof vi.fn>>;
+    let mockLogger: any;
     let baseOptions: Options<any>; // Use 'any' for simplicity in tests
 
     beforeEach(() => {
@@ -64,7 +64,7 @@ describe('validate', () => {
             error: vi.fn(),
             verbose: vi.fn(),
             silly: vi.fn(),
-        };
+        } as unknown as Record<keyof Logger, ReturnType<typeof vi.fn>>;
 
         baseOptions = {
             logger: mockLogger,
@@ -585,7 +585,7 @@ describe('validate', () => {
 
     describe('checkForExtraKeys', () => {
         let schema: z.ZodObject<any>;
-        let logger: Record<keyof Logger, ReturnType<typeof vi.fn>>;
+        let logger: any;
 
         beforeEach(() => {
             schema = z.object({ known: z.string(), nested: z.object({ deep: z.number() }) });

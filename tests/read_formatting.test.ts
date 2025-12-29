@@ -17,15 +17,17 @@ describe('read.ts internals via checkConfig', () => {
         debug: vi.fn(),
         warn: vi.fn(),
         error: vi.fn()
-    };
+    } as any;
 
     const options = {
         defaults: {
             configDirectory: '/config',
-            configFile: 'config.yaml'
+            configFile: 'config.yaml',
+            isRequired: true,
+            encoding: 'utf8'
         },
         configShape: z.object({}).shape,
-        features: [],
+        features: [] as any,
         logger: mockLogger
     };
 
@@ -144,7 +146,7 @@ longObj: { a: 1, b: 2, c: 3 }
         
         const hierOptions = {
             ...options,
-            features: ['hierarchical']
+            features: ['hierarchical'] as any
         };
         
         vi.mocked(hierarchical.loadHierarchicalConfig).mockResolvedValue({
@@ -163,7 +165,7 @@ longObj: { a: 1, b: 2, c: 3 }
         resetMocks();
         const hierOptions = {
             ...options,
-            features: ['hierarchical']
+            features: ['hierarchical'] as any
         };
         
         vi.mocked(hierarchical.loadHierarchicalConfig).mockResolvedValue({

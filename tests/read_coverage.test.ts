@@ -16,18 +16,20 @@ describe('read.ts extended coverage', () => {
         debug: vi.fn(),
         warn: vi.fn(),
         error: vi.fn()
-    };
+    } as any;
 
     const options = {
         defaults: {
             configDirectory: '/config',
             configFile: 'config.yaml',
+            isRequired: true,
+            encoding: 'utf8',
             pathResolution: {
                 pathFields: ['somePath']
             }
         },
         configShape: z.object({}).shape,
-        features: ['hierarchical'],
+        features: ['hierarchical'] as any,
         logger: mockLogger
     };
 

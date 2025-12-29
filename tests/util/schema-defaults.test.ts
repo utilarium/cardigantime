@@ -28,7 +28,7 @@ describe('Schema Defaults', () => {
         });
 
         it('should handle records', () => {
-             const schema = z.record(z.string());
+             const schema = z.record(z.string(), z.string());
              expect(extractSchemaDefaults(schema)).toEqual({});
         });
 
@@ -173,7 +173,7 @@ describe('Schema Defaults', () => {
 
         it('should handle record types by returning empty object', () => {
             const schema = z.object({
-                map: z.record(z.string())
+                map: z.record(z.string(), z.string())
             });
             const defaults = extractConfigFileDefaults(schema);
             expect(defaults).toEqual({ map: {} });
