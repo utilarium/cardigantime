@@ -8,9 +8,8 @@
     "types": "./dist/cardigantime.d.ts",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/SemicolonAmbulance/cardigantime.git"
+        "url": "git+https://github.com/tobrien/cardigantime.git"
     },
-    "packageManager": "pnpm@10.13.1",
     "exports": {
         ".": {
             "types": "./dist/cardigantime.d.ts",
@@ -25,7 +24,7 @@
         "LICENSE"
     ],
     "scripts": {
-        "build": "pnpm run lint && tsc --noEmit && vite build",
+        "build": "npm run lint && tsc --noEmit && vite build",
         "start": "dist/main.js",
         "dev": "vite build --watch",
         "watch": "vite build --watch",
@@ -33,12 +32,12 @@
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "clean": "rm -rf dist",
-        "prepublishOnly": "pnpm run clean && pnpm run build",
-        "docs:dev": "cd docs && cp ../README.md public/ && pnpm install && pnpm run dev",
-        "docs:build": "cd docs && cp ../README.md public/ && pnpm install && pnpm run build",
-        "docs:preview": "cd docs && pnpm run preview",
-        "docs:test": "cd docs && pnpm install && pnpm run test",
-        "docs:coverage": "cd docs && pnpm install && pnpm run coverage"
+        "prepublishOnly": "npm run clean && npm run build",
+        "docs:dev": "cd docs && cp ../README.md public/ && npm install && npm run dev",
+        "docs:build": "cd docs && cp ../README.md public/ && npm install && npm run build",
+        "docs:preview": "cd docs && npm run preview",
+        "docs:test": "cd docs && npm install && npm run test",
+        "docs:coverage": "cd docs && npm install && npm run coverage"
     },
     "keywords": [
         "config",
@@ -46,7 +45,7 @@
         "notes",
         "genai"
     ],
-    "author": "Semicolon Ambulance <SemicolonAmbulance@proton.me>",
+    "author": "Tim O'Brien <tobrien@discursive.com>",
     "license": "Apache-2.0",
     "dependencies": {
         "commander": "^14.0.0",
@@ -73,9 +72,7 @@
         "vite-plugin-node": "^7.0.0",
         "vitest": "^3.2.4"
     },
-    "pnpm": {
-        "overrides": {
-            "wrap-ansi": "7.0.0"
-        }
+    "overrides": {
+        "wrap-ansi": "7.0.0"
     }
 }

@@ -20,19 +20,19 @@ From the root project directory:
 
 ```bash
 # Start the documentation site in development mode
-pnpm run docs:dev
+npm run docs:dev
 
 # Build the documentation site
-pnpm run docs:build
+npm run docs:build
 
 # Preview the built documentation site
-pnpm run docs:preview
+npm run docs:preview
 
 # Run tests
-pnpm run docs:test
+npm run docs:test
 
 # Run tests with coverage
-pnpm run docs:coverage
+npm run docs:coverage
 ```
 
 ### Manual Setup
@@ -43,28 +43,28 @@ If you want to work directly in the docs directory:
 cd docs
 
 # Install dependencies
-pnpm install
+npm install
 
 # Copy the README to public directory
 cp ../README.md public/
 
 # Start development server
-pnpm run dev
+npm run dev
 
 # Build for production
-pnpm run build
+npm run build
 
 # Run tests
-pnpm run test
+npm run test
 
 # Run tests with UI
-pnpm run test:ui
+npm run test:ui
 
 # Run tests in watch mode
-pnpm run test:watch
+npm run test:watch
 
 # Generate coverage report
-pnpm run coverage
+npm run coverage
 ```
 
 ## Testing
@@ -102,19 +102,19 @@ src/test/
 
 ```bash
 # Run all tests
-pnpm run test
+npm run test
 
 # Run tests with coverage
-pnpm run coverage
+npm run coverage
 
 # Run tests in watch mode (for development)
-pnpm run test:watch
+npm run test:watch
 
 # Run tests with UI (interactive)
-pnpm run test:ui
+npm run test:ui
 
 # Run tests once (for CI)
-pnpm run test:run
+npm run test:run
 ```
 
 ### Writing Tests

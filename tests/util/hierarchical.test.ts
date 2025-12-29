@@ -410,8 +410,8 @@ describe('Hierarchical Configuration', () => {
                 {
                     link: null,
                     scopeRoots: {
-                        "@theunwalked": "../../SemicolonAmbulance",
-                        "@riotprompt": "../../StJustReckoning"
+                        "@theunwalked": "../../tobrien",
+                        "@riotprompt": "../../tobrien"
                     }
                 },
                 // Higher precedence config (../.myapp/config.yaml) 
@@ -429,8 +429,8 @@ describe('Hierarchical Configuration', () => {
                 link: null,
                 scopeRoots: {
                     "@powerfuck": "../../powerfuck",        // From higher precedence config
-                    "@theunwalked": "../../SemicolonAmbulance", // From lower precedence config
-                    "@riotprompt": "../../StJustReckoning"  // From lower precedence config
+                    "@theunwalked": "../../tobrien", // From lower precedence config
+                    "@riotprompt": "../../tobrien"  // From lower precedence config
                 }
             });
         });

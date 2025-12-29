@@ -13,9 +13,9 @@ This guide will walk you through setting up Cardigantime for your CLI applicatio
 ```bash
 npm install @theunwalked/cardigantime commander zod
 # or
-pnpm add @theunwalked/cardigantime commander zod
-# or  
 yarn add @theunwalked/cardigantime commander zod
+# or
+pnpm add @theunwalked/cardigantime commander zod
 ```
 
 ## Basic Setup

@@ -29,9 +29,9 @@ Cardigantime provides a complete, battle-tested solution for all of this complex
 ```bash
 npm install @theunwalked/cardigantime
 # or
-pnpm add @theunwalked/cardigantime
-# or
 yarn add @theunwalked/cardigantime
+# or
+pnpm add @theunwalked/cardigantime
 ```
 
 ## Quick Start

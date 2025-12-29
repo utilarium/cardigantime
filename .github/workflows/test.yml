@@ -26,5 +26,5 @@ jobs:
       - run: pnpm run test
       - uses: codecov/codecov-action@v5
         with:
-          slug: SemicolonAmbulance/cardigantime
+          slug: tobrien/cardigantime
           token: ${{ secrets.CODECOV_TOKEN }}
