@@ -16,3 +16,5 @@ RELEASE_TITLE.md
 docs/dist/
 docs/node_modules/
 docs/public/README.md
+.kodrdriv-test-cache.json
+agentic-*.md

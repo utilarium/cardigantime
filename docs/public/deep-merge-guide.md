@@ -9,8 +9,8 @@ Traditional configuration systems often replace entire objects when merging conf
 **Parent config:**
 ```yaml
 scopeRoots:
-  "@theunwalked": "../../SemicolonAmbulance"
-  "@riotprompt": "../../StJustReckoning"
+  "@theunwalked": "../../tobrien"
+  "@riotprompt": "../../tobrien"
 ```
 
 **Child config:**
@@ -29,7 +29,7 @@ Cardigantime automatically performs **deep merging**, which means nested objects
 ```yaml
 scopeRoots:
   "@powerfuck": "../../powerfuck"        # From child config
-  "@theunwalked": "../../SemicolonAmbulance"  # From parent config  
+  "@theunwalked": "../../"  # From parent config  
   "@riotprompt": "../../StJustReckoning"      # From parent config
 ```
 
@@ -71,8 +71,8 @@ const cardigantime = create({
 ```yaml
 link:
 scopeRoots:
-  "@theunwalked": "../../SemicolonAmbulance"
-  "@riotprompt": "../../StJustReckoning"
+  "@theunwalked": "../../tobrien"
+  "@riotprompt": "../../tobrien"
 database:
   host: localhost
   port: 5432
@@ -103,8 +103,8 @@ link:
 scopeRoots:
   "@local": "./local-modules"           # From Level 0
   "@powerfuck": "../../powerfuck"       # From Level 1
-  "@theunwalked": "../../SemicolonAmbulance"  # From Level 2
-  "@riotprompt": "../../StJustReckoning"      # From Level 2
+  "@theunwalked": "../../tobrien"  # From Level 2
+  "@riotprompt": "../../tobrien"      # From Level 2
 database:
   host: localhost                       # From Level 2
   port: 5433                           # From Level 1 (overrides Level 2)
@@ -135,8 +135,8 @@ This is perfect for the MyApp scenario mentioned in your question:
 ```yaml
 link:
 scopeRoots:
-  "@theunwalked": "../../SemicolonAmbulance"
-  "@riotprompt": "../../StJustReckoning"
+  "@theunwalked": "../../tobrien"
+  "@riotprompt": "../../tobrien"
 ```
 
 **`../.kodrdriv/config.yaml`:**
@@ -151,8 +151,8 @@ scopeRoots:
 link:
 scopeRoots:
   "@powerfuck": "../../powerfuck"
-  "@theunwalked": "../../SemicolonAmbulance"
-  "@riotprompt": "../../StJustReckoning"
+  "@theunwalked": "../../tobrien"
+  "@riotprompt": "../../tobrien"
 ```
 
 ### Monorepo Configuration
@@ -309,8 +309,8 @@ const configs = [
   // Lower precedence
   {
     scopeRoots: {
-      "@theunwalked": "../../SemicolonAmbulance",
-      "@riotprompt": "../../StJustReckoning"
+      "@theunwalked": "../../tobrien",
+      "@riotprompt": "../../tobrien"
     }
   },
   // Higher precedence

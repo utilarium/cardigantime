@@ -212,7 +212,8 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
     let resolvedConfigDirs: string[] = [];
 
     // Check if hierarchical configuration discovery is enabled
-    if (options.features.includes('hierarchical')) {
+    // Use optional chaining for safety although options.features is defaulted
+    if (options.features && options.features.includes('hierarchical')) {
         logger.verbose('Hierarchical configuration discovery enabled');
 
         try {
@@ -574,7 +575,8 @@ export const checkConfig = async <T extends z.ZodRawShape>(
     let tracker: ConfigSourceTracker = {};
 
     // Check if hierarchical configuration discovery is enabled
-    if (options.features.includes('hierarchical')) {
+    // Use optional chaining for safety although options.features is defaulted
+    if (options.features && options.features.includes('hierarchical')) {
         logger.verbose('Using hierarchical configuration discovery for source tracking');
 
         try {

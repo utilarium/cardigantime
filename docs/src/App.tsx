@@ -145,7 +145,7 @@ function App() {
                     </div>
                     <p className="subtitle">Robust TypeScript Configuration Management</p>
                     <div className="header-links">
-                        <a href="https://github.com/SemicolonAmbulance/cardigantime" target="_blank" rel="noopener noreferrer">
+                        <a href="https://tobrien.github.io/cardigantime/" target="_blank" rel="noopener noreferrer">
                             GitHub
                         </a>
                         <a href="https://www.npmjs.com/package/@theunwalked/cardigantime" target="_blank" rel="noopener noreferrer">
@@ -186,8 +186,8 @@ function App() {
                 <div className="footer-content">
                     <p>
                         Built with ❤️ by{' '}
-                        <a href="https://github.com/SemicolonAmbulance" target="_blank" rel="noopener noreferrer">
-                            Semicolon Ambulance
+                        <a href="https://github.com/tobrien" target="_blank" rel="noopener noreferrer">
+                            Tim O'Brien
                         </a>
                     </p>
                     <p className="license">Licensed under Apache-2.0</p>
