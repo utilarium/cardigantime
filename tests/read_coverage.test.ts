@@ -3,9 +3,11 @@ import { checkConfig } from '../src/read';
 import * as storage from '../src/util/storage';
 import * as hierarchical from '../src/util/hierarchical';
 import { z } from 'zod';
+import * as yaml from 'js-yaml';
 
 vi.mock('../src/util/storage');
 vi.mock('../src/util/hierarchical');
+vi.mock('js-yaml');
 
 describe('read.ts extended coverage', () => {
     const mockLogger = {
@@ -65,6 +67,55 @@ describe('read.ts extended coverage', () => {
         expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Warning 1'));
     });
 
+    it('should validate configuration directory', async () => {
+        // Test validateConfigDirectory via read
+        // Passing empty string for config directory should trigger error
+        // But read checks args.configDirectory || options.defaults.configDirectory
+        // We need both to be falsy? But options.defaults is typed as required.
+        // We can cast to any to pass invalid options.
+        
+        // This exercises lines around 202-205 in read.ts
+        const invalidOptions = { ...options, defaults: { configDirectory: '' } } as any;
+        await expect(checkConfig({} as any, invalidOptions)).rejects.toThrow('Configuration directory must be specified');
+        
+        // Test validateConfigDirectory internal check
+        // Line 151: if (!configDir) throw Error('Configuration directory is required');
+        // This is called by read -> validateConfigDirectory
+        // If we pass a string that evaluates to false but isn't caught by the first check? 
+        // No, the first check `if (!rawConfigDir)` handles empty string/undefined/null.
+        // So line 151 in validateConfigDirectory might be unreachable if only called from read.
+        // BUT it's a separate utility function.
+        // To test it directly, we would need to export it or find another path.
+        // checkConfig ALSO calls it.
+    });
+
+    it('should handle formatConfigValue undefined via array hole', async () => {
+        resetMocks();
+        vi.mocked(storage.create).mockReturnValue({
+            exists: vi.fn().mockResolvedValue(true),
+            isFileReadable: vi.fn().mockResolvedValue(true),
+            readFile: vi.fn().mockResolvedValue('dummy'),
+            isDirectoryWritable: vi.fn().mockResolvedValue(true),
+        } as any);
+        
+        vi.mocked(yaml.load).mockReturnValue({
+            arr: [undefined]
+        });
+        
+        vi.mocked(hierarchical.loadHierarchicalConfig).mockResolvedValue({
+            config: { arr: [undefined] },
+            discoveredDirs: [{ path: '/config', level: 0 }],
+            resolvedConfigDirs: [{ path: '/config', level: 0 }],
+            errors: []
+        });
+
+        await checkConfig({ configDirectory: '/config' }, options);
+        
+        // The logger should try to log the array with 'undefined' string
+        // formatConfigValue([undefined]) -> "[undefined]"
+        expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('[undefined]'));
+    });
+
     it('should resolve paths with missing resolvePathArray', async () => {
         resetMocks();
         const optsWithoutResolvePathArray = {
@@ -87,9 +138,8 @@ describe('read.ts extended coverage', () => {
 
         // checkConfig calls resolveConfigPaths internally
         await checkConfig({ configDirectory: '/config' }, optsWithoutResolvePathArray);
-        // We can't inspect the return value of checkConfig easily as it returns void,
-        // but this exercises the code path where resolvePathArray is undefined.
     });
+
     
     it('should handle setNestedValue creating intermediate objects', async () => {
         // This tests setNestedValue indirect usage
