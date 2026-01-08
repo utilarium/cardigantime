@@ -156,7 +156,7 @@ export const create = <T extends z.ZodRawShape>(pOptions: {
 # Modify the values below to customize your application's behavior.
 #
 # For more information about Cardigantime configuration:
-# https://tobrien.github.io/cardigantime/
+# https://utilarium.github.io/cardigantime/
 
 `;
 

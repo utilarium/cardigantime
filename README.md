@@ -149,16 +149,16 @@ Comprehensive error handling with detailed, actionable error messages to help us
 
 ## Documentation
 
-📚 **[Complete Documentation](https://tobrien.github.io/cardigantime/)** - Full documentation site
+📚 **[Complete Documentation](https://utilarium.github.io/cardigantime/)** - Full documentation site
 
 **Quick Links:**
-- [Getting Started Guide](https://tobrien.github.io/cardigantime/#getting-started) - Detailed setup and basic concepts
-- [Core Concepts](https://tobrien.github.io/cardigantime/#core-concepts) - Configuration sources, hierarchical discovery
-- [API Reference](https://tobrien.github.io/cardigantime/#api-reference) - Complete API documentation
-- [Configuration Options](https://tobrien.github.io/cardigantime/#configuration-options) - All available options
-- [Debugging & Analysis](https://tobrien.github.io/cardigantime/#debugging-analysis) - Tools for analyzing config
-- [Advanced Usage](https://tobrien.github.io/cardigantime/#advanced-usage) - Complex examples and scenarios
-- [Error Handling](https://tobrien.github.io/cardigantime/#error-handling) - Comprehensive error handling guide
+- [Getting Started Guide](https://utilarium.github.io/cardigantime/#getting-started) - Detailed setup and basic concepts
+- [Core Concepts](https://utilarium.github.io/cardigantime/#core-concepts) - Configuration sources, hierarchical discovery
+- [API Reference](https://utilarium.github.io/cardigantime/#api-reference) - Complete API documentation
+- [Configuration Options](https://utilarium.github.io/cardigantime/#configuration-options) - All available options
+- [Debugging & Analysis](https://utilarium.github.io/cardigantime/#debugging-analysis) - Tools for analyzing config
+- [Advanced Usage](https://utilarium.github.io/cardigantime/#advanced-usage) - Complex examples and scenarios
+- [Error Handling](https://utilarium.github.io/cardigantime/#error-handling) - Comprehensive error handling guide
 
 ## Contributing
 

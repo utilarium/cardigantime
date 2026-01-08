@@ -30,14 +30,11 @@ jobs:
         with:
           node-version: 22
           
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile --strict-peer-dependencies
+        run: npm ci
         
       - name: Build library
-        run: pnpm run build
+        run: npm run build
         
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -46,13 +43,13 @@ jobs:
         run: |
           # Change to docs directory and install dependencies
           cd docs
-          pnpm install --frozen-lockfile
+          npm ci
           
           # Copy README.md to public directory so it can be fetched
           cp ../README.md public/
           
           # Build the Vite documentation site
-          pnpm run build
+          npm run build
         
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
