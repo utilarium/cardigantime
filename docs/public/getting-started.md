@@ -173,10 +173,10 @@ EOF
 
 ### Configuration File Formats
 
-Cardigantime supports YAML files with `.yaml` or `.yml` extensions:
+Cardigantime supports YAML files with `.yaml` or `.yml` extensions. If the specified file isn't found, Cardigantime automatically tries the alternative extension (e.g., if `config.yaml` doesn't exist, it tries `config.yml`).
 
 ```yaml
-# config/myapp.yaml
+# config/myapp.yaml (or myapp.yml)
 apiKey: "sk-abc123def456ghi789"
 timeout: 15000
 database:

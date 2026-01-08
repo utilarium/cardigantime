@@ -21,6 +21,7 @@ let mockPathIsAbsolute: any;
 let mockPathBasename: any;
 let mockPathDirname: any;
 let mockPathResolve: any;
+let mockPathExtname: any;
 
 // Mock path - avoid referencing variables that don't exist yet
 vi.mock('path', () => {
@@ -31,6 +32,7 @@ vi.mock('path', () => {
         basename: vi.fn(),
         dirname: vi.fn(),
         resolve: vi.fn(),
+        extname: vi.fn(),
         posix: {
             resolve: (...args: string[]) => {
                 // Simple mock implementation that joins paths
@@ -52,8 +54,12 @@ vi.mock('path', () => {
 
 // Mock storage
 const mockReadFile = vi.fn<StorageUtil.Utility['readFile']>();
+const mockExists = vi.fn<StorageUtil.Utility['exists']>();
+const mockIsFileReadable = vi.fn<StorageUtil.Utility['isFileReadable']>();
 const mockStorageCreate = vi.fn<typeof StorageUtil.create>().mockReturnValue({
     readFile: mockReadFile,
+    exists: mockExists,
+    isFileReadable: mockIsFileReadable,
     // Add other methods if needed, mocked or otherwise
     // @ts-ignore
     isDirectoryReadable: vi.fn(),
@@ -101,6 +107,7 @@ mockPathIsAbsolute = vi.mocked(path.isAbsolute);
 mockPathBasename = vi.mocked(path.basename);
 mockPathDirname = vi.mocked(path.dirname);
 mockPathResolve = vi.mocked(path.resolve);
+mockPathExtname = vi.mocked(path.extname);
 
 
 // --- Test Suite ---
@@ -153,6 +160,8 @@ describe('read', () => {
         // Reset storage mock to default working implementation
         mockStorageCreate.mockReturnValue({
             readFile: mockReadFile,
+            exists: mockExists,
+            isFileReadable: mockIsFileReadable,
             // Add other methods if needed, mocked or otherwise
             // @ts-ignore
             isDirectoryReadable: vi.fn(),
@@ -201,6 +210,10 @@ describe('read', () => {
         });
         mockYamlLoad.mockReturnValue({ fileKey: 'fileValue' }); // Default valid YAML
         mockReadFile.mockResolvedValue('fileKey: fileValue'); // Default valid file content
+        
+        // Default storage file system mocks - assume file exists and is readable
+        mockExists.mockResolvedValue(true);
+        mockIsFileReadable.mockResolvedValue(true);
 
         // Default hierarchical mock implementation
         mockLoadHierarchicalConfig.mockResolvedValue({
@@ -413,6 +426,118 @@ key2: 123`;
             }
         });
 
+        test('should automatically try .yml extension when .yaml file does not exist', async () => {
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yaml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext) return 'config';
+                return 'config.yaml';
+            });
+
+            // Mock storage to simulate .yaml not existing but .yml existing
+            const mockExists = vi.fn()
+                .mockResolvedValueOnce(false)  // config.yaml doesn't exist
+                .mockResolvedValueOnce(true);  // config.yml exists
+            const mockIsFileReadable = vi.fn().mockResolvedValue(true);
+
+            const yamlContent = `key1: value1
+key2: 123`;
+            const parsedYaml = { key1: 'value1', key2: 123 };
+            mockReadFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedYaml);
+
+            const mockStorageInstance = {
+                exists: mockExists,
+                isFileReadable: mockIsFileReadable,
+                readFile: mockReadFile,
+                isDirectoryReadable: vi.fn(),
+                isDirectoryWritable: vi.fn(),
+                forEachFileIn: vi.fn(),
+                writeFile: vi.fn(),
+                ensureDir: vi.fn(),
+                remove: vi.fn(),
+                pathExists: vi.fn(),
+                copyFile: vi.fn(),
+                moveFile: vi.fn(),
+                listFiles: vi.fn(),
+                createReadStream: vi.fn(),
+                createWriteStream: vi.fn(),
+            };
+            mockStorageCreate.mockReturnValue(mockStorageInstance as any);
+
+            const config = await read(baseArgs, baseOptions);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Found config file with alternative extension'));
+            expect(config).toEqual({
+                ...parsedYaml,
+                configDirectory: baseOptions.defaults.configDirectory,
+                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
+                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+            });
+        });
+
+        test('should automatically try .yaml extension when .yml file does not exist', async () => {
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext) return 'config';
+                return 'config.yml';
+            });
+
+            // Mock storage to simulate .yml not existing but .yaml existing
+            const mockExists = vi.fn()
+                .mockResolvedValueOnce(false)  // config.yml doesn't exist
+                .mockResolvedValueOnce(true);  // config.yaml exists
+            const mockIsFileReadable = vi.fn().mockResolvedValue(true);
+
+            const yamlContent = `key1: value1
+key2: 123`;
+            const parsedYaml = { key1: 'value1', key2: 123 };
+            mockReadFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedYaml);
+
+            const mockStorageInstance = {
+                exists: mockExists,
+                isFileReadable: mockIsFileReadable,
+                readFile: mockReadFile,
+                isDirectoryReadable: vi.fn(),
+                isDirectoryWritable: vi.fn(),
+                forEachFileIn: vi.fn(),
+                writeFile: vi.fn(),
+                ensureDir: vi.fn(),
+                remove: vi.fn(),
+                pathExists: vi.fn(),
+                copyFile: vi.fn(),
+                moveFile: vi.fn(),
+                listFiles: vi.fn(),
+                createReadStream: vi.fn(),
+                createWriteStream: vi.fn(),
+            };
+            mockStorageCreate.mockReturnValue(mockStorageInstance as any);
+
+            const optionsWithYml = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configFile: 'config.yml'
+                }
+            };
+
+            const config = await read(baseArgs, optionsWithYml);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Found config file with alternative extension'));
+            expect(config).toEqual({
+                ...parsedYaml,
+                configDirectory: baseOptions.defaults.configDirectory,
+                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
+                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+            });
+        });
+
         test('should log error for other file read errors', async () => {
             const error = new Error('Permission denied');
             mockReadFile.mockRejectedValue(error);
@@ -538,12 +663,12 @@ key3: undefined`;
 
         test('should handle path traversal attempts in configFile', async () => {
             // Test path traversal through mocking path.normalize behavior
-            mockPathNormalize.mockReturnValue('../../../etc/passwd');
-            mockPathJoin.mockImplementation((base: string, file: string) => {
-                if (file.includes('..')) {
-                    throw new Error('Invalid path: path traversal detected');
+            mockPathNormalize.mockImplementation((p: string) => {
+                // Return the path as-is for most cases, but normalize the traversal path
+                if (p === '../../../etc/passwd') {
+                    return '../../../etc/passwd';
                 }
-                return `${base}/${file}`;
+                return p;
             });
 
             const optionsWithTraversal = {
@@ -558,15 +683,14 @@ key3: undefined`;
         });
 
         test('should handle absolute path attempts in configFile', async () => {
-            mockPathIsAbsolute.mockReturnValue(true);
-            mockPathNormalize.mockReturnValue('/etc/passwd');
-            mockPathJoin.mockImplementation((base: string, file: string) => {
-                // The actual implementation checks for both conditions in validatePath
-                // and throws "path traversal detected" for both .. and absolute paths
-                if (file.includes('..') || mockPathIsAbsolute(file)) {
-                    throw new Error('Invalid path: path traversal detected');
+            mockPathIsAbsolute.mockImplementation((p: string) => {
+                return p === '/etc/passwd' || p.startsWith('/');
+            });
+            mockPathNormalize.mockImplementation((p: string) => {
+                if (p === '/etc/passwd') {
+                    return '/etc/passwd';
                 }
-                return `${base}/${file}`;
+                return p;
             });
 
             const optionsWithAbsolute = {
@@ -581,12 +705,11 @@ key3: undefined`;
         });
 
         test('should handle path starting with separator in configFile', async () => {
-            mockPathNormalize.mockReturnValue('/config.yaml');
-            mockPathJoin.mockImplementation((base: string, file: string) => {
-                if (file.startsWith('/') || file.startsWith('\\')) {
-                    throw new Error('Invalid path: absolute path detected');
+            mockPathNormalize.mockImplementation((p: string) => {
+                if (p === '/config.yaml') {
+                    return '/config.yaml';
                 }
-                return `${base}/${file}`;
+                return p;
             });
 
             const optionsWithLeadingSeparator = {
@@ -601,13 +724,6 @@ key3: undefined`;
         });
 
         test('should handle empty path parameters', async () => {
-            mockPathJoin.mockImplementation((base: string, file: string) => {
-                if (!file || !base) {
-                    throw new Error('Invalid path parameters');
-                }
-                return `${base}/${file}`;
-            });
-
             const optionsWithEmptyFile = {
                 ...baseOptions,
                 defaults: {
@@ -1232,12 +1348,11 @@ key3: undefined`;
         });
 
         test('should handle Windows-style path separators in path validation', async () => {
-            mockPathNormalize.mockReturnValue('\\config.yaml');
-            mockPathJoin.mockImplementation((base: string, file: string) => {
-                if (file.startsWith('/') || file.startsWith('\\')) {
-                    throw new Error('Invalid path: absolute path detected');
+            mockPathNormalize.mockImplementation((p: string) => {
+                if (p === '\\config.yaml') {
+                    return '\\config.yaml';
                 }
-                return `${base}/${file}`;
+                return p;
             });
 
             const optionsWithBackslash = {
@@ -1895,12 +2010,11 @@ objectValue:
             mockPathIsAbsolute.mockImplementation((p: string) => {
                 return p.startsWith('/') || /^[A-Za-z]:/.test(p);
             });
-            mockPathNormalize.mockReturnValue('C:\\config.yaml');
-            mockPathJoin.mockImplementation((base: string, file: string) => {
-                if (mockPathIsAbsolute(file)) {
-                    throw new Error('Invalid path: path traversal detected');
+            mockPathNormalize.mockImplementation((p: string) => {
+                if (p === 'C:\\config.yaml') {
+                    return 'C:\\config.yaml';
                 }
-                return `${base}/${file}`;
+                return p;
             });
 
             const optionsWithWindowsPath = {
@@ -2395,10 +2509,11 @@ mixedArray:
 
             await checkConfig(baseArgs, singleDirOptions);
 
-            // The actual output shows a simple config with api.timeout, so let's check for that instead
+            // Check that the output contains the expected config values
             const allOutput = logSpy.mock.calls.map(call => call[0]).join('\n');
-            expect(allOutput).toContain('api.timeout'); // Check for actual displayed config key
-            expect(allOutput).toContain('8000'); // Check for the timeout value
+            expect(allOutput).toContain('booleanTrue'); // Check for boolean value
+            expect(allOutput).toContain('numberPositive'); // Check for number value
+            expect(allOutput).toContain('stringValue'); // Check for string value
             expect(allOutput).toContain('CONFIGURATION SOURCE ANALYSIS'); // Main analysis header
             expect(allOutput).toContain('RESOLVED CONFIGURATION WITH SOURCES'); // Sources section
         });
@@ -2718,23 +2833,13 @@ production:
             mockReadFile.mockResolvedValue(yamlWithReferences);
             mockYamlLoad.mockReturnValue(parsedYaml);
 
-            // Mock hierarchical loading to return different test data
-            mockLoadHierarchicalConfig.mockResolvedValue({
-                config: {
-                    overriddenValue: 'parent-value',
-                    parentOnlyValue: 'parent-only'
-                },
-                discoveredDirs: [{ path: '.', level: 0 }],
-                resolvedConfigDirs: [{ path: '.', level: 0 }],
-                errors: []
-            });
-
             const config = await read(baseArgs, baseOptions);
 
-            // The test is actually using hierarchical loading, so expect that result
+            // Since hierarchical mode is not enabled, expect the parsed YAML content
             expect(config).toEqual({
-                overriddenValue: 'parent-value',
-                parentOnlyValue: 'parent-only',
+                defaults: { timeout: 30, retries: 3 },
+                development: { timeout: 30, retries: 3, host: 'localhost' },
+                production: { timeout: 60, retries: 3, host: 'prod.example.com' },
                 configDirectory: baseOptions.defaults.configDirectory,
                 discoveredConfigDirs: [baseOptions.defaults.configDirectory],
                 resolvedConfigDirs: [baseOptions.defaults.configDirectory]
@@ -2761,29 +2866,12 @@ script: >
             mockReadFile.mockResolvedValue(yamlWithMultiline);
             mockYamlLoad.mockReturnValue(parsedYaml);
 
-            // Mock hierarchical loading to return test data
-            mockLoadHierarchicalConfig.mockResolvedValue({
-                config: {
-                    overriddenValue: 'child-value',
-                    childOnlyValue: 'child-only',
-                    nestedValue: {
-                        overridden: 'child-nested'
-                    }
-                },
-                discoveredDirs: [{ path: '.', level: 0 }],
-                resolvedConfigDirs: [{ path: '.', level: 0 }],
-                errors: []
-            });
-
             const config = await read(baseArgs, baseOptions);
 
-            // The test is actually using hierarchical loading, so expect that result
+            // Since hierarchical mode is not enabled, expect the parsed YAML content
             expect(config).toEqual({
-                overriddenValue: 'child-value',
-                childOnlyValue: 'child-only',
-                nestedValue: {
-                    overridden: 'child-nested'
-                },
+                description: 'This is a multi-line\ndescription that spans\nmultiple lines.\n',
+                script: 'echo "This is a folded string that will be joined with spaces."\n',
                 configDirectory: baseOptions.defaults.configDirectory,
                 discoveredConfigDirs: [baseOptions.defaults.configDirectory],
                 resolvedConfigDirs: [baseOptions.defaults.configDirectory]

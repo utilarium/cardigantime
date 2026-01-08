@@ -310,6 +310,57 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
 }
 
 /**
+ * Tries to find a config file with alternative extensions (.yaml or .yml).
+ * 
+ * @param storage Storage instance to use for file operations
+ * @param configDir The directory containing the config file
+ * @param configFileName The base config file name (may have .yaml or .yml extension)
+ * @param logger Logger for debugging
+ * @returns Promise resolving to the found config file path or null if not found
+ */
+async function findConfigFileWithExtension(
+    storage: any,
+    configDir: string,
+    configFileName: string,
+    logger: any
+): Promise<string | null> {
+    // Validate the config file name to prevent path traversal
+    const configFilePath = validatePath(configFileName, configDir);
+    
+    // First try the exact filename as specified
+    const exists = await storage.exists(configFilePath);
+    if (exists) {
+        const isReadable = await storage.isFileReadable(configFilePath);
+        if (isReadable) {
+            return configFilePath;
+        }
+    }
+    
+    // If the exact filename doesn't exist or isn't readable, try alternative extensions
+    // Only do this if the filename has a .yaml or .yml extension
+    const ext = path.extname(configFileName);
+    if (ext === '.yaml' || ext === '.yml') {
+        const baseName = path.basename(configFileName, ext);
+        const alternativeExt = ext === '.yaml' ? '.yml' : '.yaml';
+        const alternativeFileName = baseName + alternativeExt;
+        const alternativePath = validatePath(alternativeFileName, configDir);
+        
+        logger.debug(`Config file not found at ${configFilePath}, trying alternative: ${alternativePath}`);
+        
+        const altExists = await storage.exists(alternativePath);
+        if (altExists) {
+            const altIsReadable = await storage.isFileReadable(alternativePath);
+            if (altIsReadable) {
+                logger.debug(`Found config file with alternative extension: ${alternativePath}`);
+                return alternativePath;
+            }
+        }
+    }
+    
+    return null;
+}
+
+/**
  * Loads configuration from a single directory (traditional mode).
  * 
  * @param resolvedConfigDir - The resolved configuration directory path
@@ -323,13 +374,25 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
     logger: any
 ): Promise<object> {
     const storage = Storage.create({ log: logger.debug });
-    const configFile = validatePath(options.defaults.configFile, resolvedConfigDir);
     logger.verbose('Attempting to load config file for cardigantime');
 
     let rawFileConfig: object = {};
 
     try {
-        const yamlContent = await storage.readFile(configFile, options.defaults.encoding);
+        // Try to find the config file with alternative extensions
+        const configFilePath = await findConfigFileWithExtension(
+            storage,
+            resolvedConfigDir,
+            options.defaults.configFile,
+            logger
+        );
+        
+        if (!configFilePath) {
+            logger.verbose('Configuration file not found. Using empty configuration.');
+            return rawFileConfig;
+        }
+
+        const yamlContent = await storage.readFile(configFilePath, options.defaults.encoding);
 
         // SECURITY FIX: Use safer parsing options to prevent code execution vulnerabilities
         const parsedYaml = yaml.load(yamlContent);
@@ -341,6 +404,11 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
             logger.warn('Ignoring invalid configuration format. Expected an object, got ' + typeof parsedYaml);
         }
     } catch (error: any) {
+        // Re-throw security-related errors (path validation failures)
+        if (error.message && /Invalid path|path traversal|absolute path/i.test(error.message)) {
+            throw error;
+        }
+        
         if (error.code === 'ENOENT' || /not found|no such file/i.test(error.message)) {
             logger.verbose('Configuration file not found. Using empty configuration.');
         } else {
