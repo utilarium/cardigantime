@@ -8,7 +8,7 @@
   "types": "./dist/cardigantime.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tobrien/cardigantime.git"
+    "url": "git+https://github.com/utilarium/cardigantime.git"
   },
   "exports": {
     ".": {
@@ -48,7 +48,7 @@
   ],
   "author": "Tim O'Brien <tobrien@discursive.com>",
   "license": "Apache-2.0",
-  "homepage": "https://tobrien.github.io/cardigantime/",
+  "homepage": "https://utilarium.github.io/cardigantime/",
   "dependencies": {
     "commander": "^14.0.0",
     "glob": "^13.0.0",
