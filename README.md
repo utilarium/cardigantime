@@ -138,6 +138,9 @@ Merges configuration from multiple sources in order of precedence:
 2. **Configuration file(s)** (medium priority)  
 3. **Default values** (lowest priority)
 
+### Flexible YAML Support
+Supports both `.yaml` and `.yml` file extensions with automatic fallback - if `config.yaml` isn't found, Cardigantime automatically tries `config.yml` (and vice versa).
+
 ### Hierarchical Configuration Discovery
 Supports hierarchical configuration discovery, similar to how `.gitignore`, `.eslintrc`, or `package.json` work - searching up the directory tree for configuration directories.
 

@@ -45,6 +45,7 @@ vi.mock('path', () => {
     const mockBasename = vi.fn();
     const mockJoin = vi.fn();
     const mockIsAbsolute = vi.fn();
+    const mockExtname = vi.fn();
 
     return {
         default: {
@@ -53,12 +54,14 @@ vi.mock('path', () => {
             basename: mockBasename,
             join: mockJoin,
             isAbsolute: mockIsAbsolute,
+            extname: mockExtname,
         },
         resolve: mockResolve,
         dirname: mockDirname,
         basename: mockBasename,
         join: mockJoin,
         isAbsolute: mockIsAbsolute,
+        extname: mockExtname,
     };
 });
 
@@ -68,6 +71,7 @@ const mockPathDirname = vi.mocked(path.dirname);
 const mockPathBasename = vi.mocked(path.basename);
 const mockPathJoin = vi.mocked(path.join);
 const mockPathIsAbsolute = vi.mocked(path.isAbsolute);
+const mockPathExtname = vi.mocked(path.extname);
 
 // Mock logger
 const mockLogger = {
@@ -287,6 +291,14 @@ describe('Hierarchical Configuration', () => {
         });
 
         test('should return null when config file does not exist', async () => {
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yaml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext === '.yaml') return 'config';
+                return 'config.yaml';
+            });
+
             mockStorage.exists.mockResolvedValue(false);
 
             const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
@@ -296,13 +308,22 @@ describe('Hierarchical Configuration', () => {
         });
 
         test('should return null when config file is not readable', async () => {
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yaml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext === '.yaml') return 'config';
+                return 'config.yaml';
+            });
+
             mockStorage.exists.mockResolvedValue(true);
             mockStorage.isFileReadable.mockResolvedValue(false);
 
             const result = await loadConfigFromDirectory('/project/.myapp', 'config.yaml', 'utf8', mockLogger);
 
             expect(result).toBeNull();
-            expect(mockLogger.debug).toHaveBeenCalledWith('Config file exists but is not readable: /project/.myapp/config.yaml');
+            // When the file is not readable, it will try the alternative extension
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
         });
 
         test('should return null for invalid YAML format', async () => {
@@ -328,6 +349,83 @@ describe('Hierarchical Configuration', () => {
             expect(mockLogger.debug).toHaveBeenCalledWith(
                 expect.stringContaining('Error loading config from /project/.myapp/config.yaml: Read error')
             );
+        });
+
+        test('should try .yml extension when .yaml file does not exist', async () => {
+            const configDir = '/project/.myapp';
+            const configFileName = 'config.yaml';
+            const yamlContent = 'apiKey: test-key\ntimeout: 5000';
+            const parsedConfig = { apiKey: 'test-key', timeout: 5000 };
+
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yaml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext === '.yaml') return 'config';
+                return 'config.yaml';
+            });
+
+            // First call: config.yaml doesn't exist
+            // Second call: config.yml exists
+            mockStorage.exists.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+            mockStorage.isFileReadable.mockResolvedValue(true);
+            mockStorage.readFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedConfig);
+
+            const result = await loadConfigFromDirectory(configDir, configFileName, 'utf8', mockLogger);
+
+            expect(result).toEqual(parsedConfig);
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Found config file with alternative extension'));
+        });
+
+        test('should try .yaml extension when .yml file does not exist', async () => {
+            const configDir = '/project/.myapp';
+            const configFileName = 'config.yml';
+            const yamlContent = 'apiKey: test-key\ntimeout: 5000';
+            const parsedConfig = { apiKey: 'test-key', timeout: 5000 };
+
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext === '.yml') return 'config';
+                return 'config.yml';
+            });
+
+            // First call: config.yml doesn't exist
+            // Second call: config.yaml exists
+            mockStorage.exists.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
+            mockStorage.isFileReadable.mockResolvedValue(true);
+            mockStorage.readFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedConfig);
+
+            const result = await loadConfigFromDirectory(configDir, configFileName, 'utf8', mockLogger);
+
+            expect(result).toEqual(parsedConfig);
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Found config file with alternative extension'));
+        });
+
+        test('should return null when neither .yaml nor .yml exists', async () => {
+            const configDir = '/project/.myapp';
+            const configFileName = 'config.yaml';
+
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yaml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext === '.yaml') return 'config';
+                return 'config.yaml';
+            });
+
+            // Both config.yaml and config.yml don't exist
+            mockStorage.exists.mockResolvedValue(false);
+
+            const result = await loadConfigFromDirectory(configDir, configFileName, 'utf8', mockLogger);
+
+            expect(result).toBeNull();
+            expect(mockLogger.debug).toHaveBeenCalledWith('Config file does not exist: /project/.myapp/config.yaml');
         });
     });
 

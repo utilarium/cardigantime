@@ -218,6 +218,55 @@ export async function discoverConfigDirectories(
 }
 
 /**
+ * Tries to find a config file with alternative extensions (.yaml or .yml).
+ * 
+ * @param storage Storage instance to use for file operations
+ * @param configDir The directory containing the config file
+ * @param configFileName The base config file name (may have .yaml or .yml extension)
+ * @param logger Optional logger for debugging
+ * @returns Promise resolving to the found config file path or null if not found
+ */
+async function findConfigFileWithExtension(
+    storage: any,
+    configDir: string,
+    configFileName: string,
+    logger?: Logger
+): Promise<string | null> {
+    const configFilePath = path.join(configDir, configFileName);
+    
+    // First try the exact filename as specified
+    const exists = await storage.exists(configFilePath);
+    if (exists) {
+        const isReadable = await storage.isFileReadable(configFilePath);
+        if (isReadable) {
+            return configFilePath;
+        }
+    }
+    
+    // If the exact filename doesn't exist or isn't readable, try alternative extensions
+    // Only do this if the filename has a .yaml or .yml extension
+    const ext = path.extname(configFileName);
+    if (ext === '.yaml' || ext === '.yml') {
+        const baseName = path.basename(configFileName, ext);
+        const alternativeExt = ext === '.yaml' ? '.yml' : '.yaml';
+        const alternativePath = path.join(configDir, baseName + alternativeExt);
+        
+        logger?.debug(`Config file not found at ${configFilePath}, trying alternative: ${alternativePath}`);
+        
+        const altExists = await storage.exists(alternativePath);
+        if (altExists) {
+            const altIsReadable = await storage.isFileReadable(alternativePath);
+            if (altIsReadable) {
+                logger?.debug(`Found config file with alternative extension: ${alternativePath}`);
+                return alternativePath;
+            }
+        }
+    }
+    
+    return null;
+}
+
+/**
  * Loads and parses a configuration file from a directory.
  * 
  * @param configDir Path to the configuration directory
@@ -237,20 +286,15 @@ export async function loadConfigFromDirectory(
     resolvePathArray?: string[]
 ): Promise<object | null> {
     const storage = createStorage({ log: logger?.debug || (() => { }) });
-    const configFilePath = path.join(configDir, configFileName);
-
+    
     try {
-        logger?.verbose(`Attempting to load config file: ${configFilePath}`);
+        logger?.verbose(`Attempting to load config file: ${path.join(configDir, configFileName)}`);
 
-        const exists = await storage.exists(configFilePath);
-        if (!exists) {
-            logger?.debug(`Config file does not exist: ${configFilePath}`);
-            return null;
-        }
-
-        const isReadable = await storage.isFileReadable(configFilePath);
-        if (!isReadable) {
-            logger?.debug(`Config file exists but is not readable: ${configFilePath}`);
+        // Try to find the config file with alternative extensions
+        const configFilePath = await findConfigFileWithExtension(storage, configDir, configFileName, logger);
+        
+        if (!configFilePath) {
+            logger?.debug(`Config file does not exist: ${path.join(configDir, configFileName)}`);
             return null;
         }
 
@@ -272,7 +316,7 @@ export async function loadConfigFromDirectory(
             return null;
         }
     } catch (error: any) {
-        logger?.debug(`Error loading config from ${configFilePath}: ${error.message}`);
+        logger?.debug(`Error loading config from ${path.join(configDir, configFileName)}: ${error.message}`);
         return null;
     }
 }

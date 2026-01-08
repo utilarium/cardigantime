@@ -21,6 +21,7 @@ let mockPathIsAbsolute: any;
 let mockPathBasename: any;
 let mockPathDirname: any;
 let mockPathResolve: any;
+let mockPathExtname: any;
 
 // Mock path - avoid referencing variables that don't exist yet
 vi.mock('path', () => {
@@ -31,6 +32,7 @@ vi.mock('path', () => {
         basename: vi.fn(),
         dirname: vi.fn(),
         resolve: vi.fn(),
+        extname: vi.fn(),
         posix: {
             resolve: (...args: string[]) => {
                 // Simple mock implementation that joins paths
@@ -101,6 +103,7 @@ mockPathIsAbsolute = vi.mocked(path.isAbsolute);
 mockPathBasename = vi.mocked(path.basename);
 mockPathDirname = vi.mocked(path.dirname);
 mockPathResolve = vi.mocked(path.resolve);
+mockPathExtname = vi.mocked(path.extname);
 
 
 // --- Test Suite ---
@@ -411,6 +414,118 @@ key2: 123`;
                     resolvedConfigDirs: []
                 });
             }
+        });
+
+        test('should automatically try .yml extension when .yaml file does not exist', async () => {
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yaml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext) return 'config';
+                return 'config.yaml';
+            });
+
+            // Mock storage to simulate .yaml not existing but .yml existing
+            const mockExists = vi.fn()
+                .mockResolvedValueOnce(false)  // config.yaml doesn't exist
+                .mockResolvedValueOnce(true);  // config.yml exists
+            const mockIsFileReadable = vi.fn().mockResolvedValue(true);
+
+            const yamlContent = `key1: value1
+key2: 123`;
+            const parsedYaml = { key1: 'value1', key2: 123 };
+            mockReadFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedYaml);
+
+            const mockStorageInstance = {
+                exists: mockExists,
+                isFileReadable: mockIsFileReadable,
+                readFile: mockReadFile,
+                isDirectoryReadable: vi.fn(),
+                isDirectoryWritable: vi.fn(),
+                forEachFileIn: vi.fn(),
+                writeFile: vi.fn(),
+                ensureDir: vi.fn(),
+                remove: vi.fn(),
+                pathExists: vi.fn(),
+                copyFile: vi.fn(),
+                moveFile: vi.fn(),
+                listFiles: vi.fn(),
+                createReadStream: vi.fn(),
+                createWriteStream: vi.fn(),
+            };
+            mockStorageCreate.mockReturnValue(mockStorageInstance as any);
+
+            const config = await read(baseArgs, baseOptions);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Found config file with alternative extension'));
+            expect(config).toEqual({
+                ...parsedYaml,
+                configDirectory: baseOptions.defaults.configDirectory,
+                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
+                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+            });
+        });
+
+        test('should automatically try .yaml extension when .yml file does not exist', async () => {
+            // Mock path operations
+            mockPathJoin.mockImplementation((...args: string[]) => args.join('/'));
+            mockPathExtname.mockReturnValue('.yml');
+            mockPathBasename.mockImplementation((p: string, ext?: string) => {
+                if (ext) return 'config';
+                return 'config.yml';
+            });
+
+            // Mock storage to simulate .yml not existing but .yaml existing
+            const mockExists = vi.fn()
+                .mockResolvedValueOnce(false)  // config.yml doesn't exist
+                .mockResolvedValueOnce(true);  // config.yaml exists
+            const mockIsFileReadable = vi.fn().mockResolvedValue(true);
+
+            const yamlContent = `key1: value1
+key2: 123`;
+            const parsedYaml = { key1: 'value1', key2: 123 };
+            mockReadFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedYaml);
+
+            const mockStorageInstance = {
+                exists: mockExists,
+                isFileReadable: mockIsFileReadable,
+                readFile: mockReadFile,
+                isDirectoryReadable: vi.fn(),
+                isDirectoryWritable: vi.fn(),
+                forEachFileIn: vi.fn(),
+                writeFile: vi.fn(),
+                ensureDir: vi.fn(),
+                remove: vi.fn(),
+                pathExists: vi.fn(),
+                copyFile: vi.fn(),
+                moveFile: vi.fn(),
+                listFiles: vi.fn(),
+                createReadStream: vi.fn(),
+                createWriteStream: vi.fn(),
+            };
+            mockStorageCreate.mockReturnValue(mockStorageInstance as any);
+
+            const optionsWithYml = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    configFile: 'config.yml'
+                }
+            };
+
+            const config = await read(baseArgs, optionsWithYml);
+
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('trying alternative'));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Found config file with alternative extension'));
+            expect(config).toEqual({
+                ...parsedYaml,
+                configDirectory: baseOptions.defaults.configDirectory,
+                discoveredConfigDirs: [baseOptions.defaults.configDirectory],
+                resolvedConfigDirs: [baseOptions.defaults.configDirectory]
+            });
         });
 
         test('should log error for other file read errors', async () => {

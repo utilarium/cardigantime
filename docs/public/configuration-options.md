@@ -37,6 +37,8 @@ Name of the configuration file within the config directory.
 **Default:** `'config.yaml'`
 **Supported formats:** `.yaml`, `.yml`
 
+**Automatic Extension Fallback:** If the specified file is not found, Cardigantime will automatically try the alternative extension. For example, if `config.yaml` is not found, it will try `config.yml`, and vice versa.
+
 **Examples:**
 - `'app.yaml'`
 - `'settings.yml'` 
