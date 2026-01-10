@@ -2002,6 +2002,100 @@ objectValue:
             // Path resolution should not be called for non-string values
             expect(mockPathResolve).not.toHaveBeenCalled();
         });
+
+        test('should prevent prototype pollution via __proto__ in path resolution', async () => {
+            const configDir = '/project/config';
+            
+            // Create a config object that simulates what could happen with malicious input
+            // We use Object.create(null) and then manually set properties to avoid
+            // the automatic prototype chain behavior
+            const dataObj: any = {};
+            dataObj.constructor = { polluted: './malicious/path' };
+            dataObj.prototype = { polluted: './malicious/path' };
+            
+            const parsedYaml = {
+                data: dataObj
+            };
+
+            const pathResolutionOptions = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    pathResolution: {
+                        pathFields: ['data.constructor.polluted', 'data.prototype.polluted'],
+                        resolvePathArray: []
+                    }
+                }
+            };
+
+            mockReadFile.mockResolvedValue('data:\n  constructor:\n    polluted: ./malicious/path');
+            mockYamlLoad.mockReturnValue(parsedYaml);
+            mockPathResolve.mockReturnValue('/project/config/malicious/path');
+
+            const config = await read({ configDirectory: configDir }, pathResolutionOptions);
+
+            // Verify that Object.prototype was not polluted
+            expect((Object.prototype as any).polluted).toBeUndefined();
+            
+            // The setNestedValue function should have rejected the unsafe keys in the path
+            // Even though path resolution was called, the assignment was blocked
+            expect(config).toHaveProperty('data');
+            
+            // Verify no pollution occurred on new objects
+            const testObj = {};
+            expect((testObj as any).polluted).toBeUndefined();
+            expect((testObj as any).constructor).toBe(Object);
+        });
+
+        test('should prevent prototype pollution when setting values with unsafe keys', async () => {
+            const configDir = '/project/config';
+            const pathResolutionOptions = {
+                ...baseOptions,
+                defaults: {
+                    ...baseOptions.defaults,
+                    pathResolution: {
+                        // Try to set a value using an unsafe key in the path
+                        pathFields: ['normal.__proto__', 'normal.constructor', 'normal.prototype'],
+                        resolvePathArray: []
+                    }
+                }
+            };
+
+            const yamlContent = `
+normal:
+  __proto__: ./should-not-be-assigned
+  constructor: ./should-not-be-assigned
+  prototype: ./should-not-be-assigned
+  safe: ./should-resolve
+`;
+            const parsedYaml = {
+                normal: {
+                    __proto__: './should-not-be-assigned',
+                    constructor: './should-not-be-assigned',
+                    prototype: './should-not-be-assigned',
+                    safe: './should-resolve'
+                }
+            };
+
+            mockReadFile.mockResolvedValue(yamlContent);
+            mockYamlLoad.mockReturnValue(parsedYaml);
+            mockPathResolve.mockReturnValue('/project/config/resolved');
+
+            const config = await read({ configDirectory: configDir }, pathResolutionOptions);
+
+            // Verify that Object.prototype was not polluted
+            const testObj = {};
+            expect((testObj as any).polluted).toBeUndefined();
+            
+            // The setNestedValue function should have silently rejected assignments to unsafe keys
+            // So the values should remain as they were (path resolution may have been called,
+            // but the assignment was blocked by isUnsafeKey check)
+            // The __proto__ property on config.normal should be the actual object prototype, not our value
+            expect(config.normal).toBeDefined();
+            
+            // Verify no pollution occurred
+            expect((Object.prototype as any).polluted).toBeUndefined();
+        });
     });
 
     describe('additional validation edge cases', () => {

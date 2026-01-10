@@ -54,6 +54,10 @@ function setNestedValue(obj: any, path: string, value: any): void {
     }
 
     const target = keys.reduce((current, key) => {
+        // Skip if this is an unsafe key (already checked above, but defensive)
+        if (isUnsafeKey(key)) {
+            return current;
+        }
         if (!(key in current)) {
             current[key] = {};
         }
