@@ -40,10 +40,24 @@ function getNestedValue(obj: any, path: string): any {
 /**
  * Sets a nested value in an object using dot notation.
  */
+function isUnsafeKey(key: string): boolean {
+    return key === '__proto__' || key === 'constructor' || key === 'prototype';
+}
+
 function setNestedValue(obj: any, path: string, value: any): void {
     const keys = path.split('.');
     const lastKey = keys.pop()!;
+
+    // Prevent prototype pollution via special property names
+    if (isUnsafeKey(lastKey) || keys.some(isUnsafeKey)) {
+        return;
+    }
+
     const target = keys.reduce((current, key) => {
+        // Skip if this is an unsafe key (already checked above, but defensive)
+        if (isUnsafeKey(key)) {
+            return current;
+        }
         if (!(key in current)) {
             current[key] = {};
         }
