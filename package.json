@@ -1,6 +1,6 @@
 {
   "name": "@theunwalked/cardigantime",
-  "version": "0.0.20",
+  "version": "0.0.21",
   "description": "cardigantime is a tool to help you time your cardigans.",
   "type": "module",
   "main": "./dist/cardigantime.cjs",
@@ -49,6 +49,9 @@
   "author": "Tim O'Brien <tobrien@discursive.com>",
   "license": "Apache-2.0",
   "homepage": "https://utilarium.github.io/cardigantime/",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "dependencies": {
     "commander": "^14.0.0",
     "glob": "^13.0.0",
