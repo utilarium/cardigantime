@@ -1,4 +1,4 @@
-import path from 'path';
+import * as path from 'node:path';
 import * as yaml from 'js-yaml';
 import { create as createStorage } from './storage';
 import { Logger, FieldOverlapOptions, ArrayOverlapMode } from '../types';

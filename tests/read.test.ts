@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import type * as yaml from 'js-yaml';
-import * as path from 'path';
+import * as path from 'node:path';
 import type * as StorageUtil from '../src/util/storage';
 import type * as HierarchicalUtil from '../src/util/hierarchical';
 import { z } from 'zod';

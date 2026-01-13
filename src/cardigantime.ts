@@ -7,7 +7,7 @@ import { read, checkConfig } from './read';
 import { ConfigSchema } from 'types';
 import { validate } from './validate';
 import * as yaml from 'js-yaml';
-import * as path from 'path';
+import * as path from 'node:path';
 import { generateDefaultConfig } from './util/schema-defaults';
 import * as Storage from './util/storage';
 import { FileSystemError } from './error/FileSystemError';

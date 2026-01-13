@@ -1,5 +1,5 @@
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import {
     discoverConfigDirectories,
     loadConfigFromDirectory,
@@ -26,7 +26,7 @@ vi.mock('js-yaml', () => ({
 
 import { create as createStorage } from '../../src/util/storage';
 import * as yaml from 'js-yaml';
-import * as path from 'path';
+import * as path from 'node:path';
 
 const mockStorage = {
     exists: vi.fn(),

@@ -1,5 +1,5 @@
 import * as yaml from 'js-yaml';
-import * as path from 'path';
+import * as path from 'node:path';
 import { z, ZodObject } from 'zod';
 import { Args, ConfigSchema, Options } from './types';
 import * as Storage from './util/storage';

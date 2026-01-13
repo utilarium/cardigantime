@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { VitePluginNode } from 'vite-plugin-node';
 import replace from '@rollup/plugin-replace';
 // import { visualizer } from 'rollup-plugin-visualizer';
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 import dts from 'vite-plugin-dts';
 
 let gitInfo = {
@@ -96,45 +96,8 @@ export default defineConfig({
                 'glob',
                 'js-yaml',
                 'zod',
-                // Node built-ins
-                'fs',
-                'path',
-                'child_process',
-                'os',
-                'url',
-                'util',
-                'crypto',
-                'stream',
-                'events',
-                'buffer',
-                'process',
-                'module',
-                'assert',
-                'querystring',
-                'http',
-                'https',
-                'net',
-                'tls',
-                'dgram',
-                'dns',
-                'readline',
-                'repl',
-                'vm',
-                'zlib',
-                'console',
-                'constants',
-                'domain',
-                'punycode',
-                'string_decoder',
-                'timers',
-                'tty',
-                'v8',
-                'worker_threads',
-                'cluster',
-                'inspector',
-                'perf_hooks',
-                'async_hooks',
-                'trace_events',
+                // Node built-ins (with and without node: prefix)
+                /^node:/,
             ],
         },
         // Make sure Vite generates ESM-compatible code
