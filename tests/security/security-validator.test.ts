@@ -13,6 +13,8 @@ describe('SecurityValidator', () => {
         warn: vi.fn(),
         error: vi.fn(),
         debug: vi.fn(),
+        verbose: vi.fn(),
+        silly: vi.fn(),
     };
 
     describe('constructor', () => {
@@ -283,6 +285,8 @@ describe('SecurityValidator', () => {
                 warn: vi.fn(),
                 error: vi.fn(),
                 debug: debugFn,
+                verbose: vi.fn(),
+                silly: vi.fn(),
             };
             
             const validator = new SecurityValidator({ auditLogging: true }, loggerWithDebug);
@@ -352,6 +356,8 @@ describe('SecurityValidator', () => {
                 warn: warnFn,
                 error: vi.fn(),
                 debug: vi.fn(),
+                verbose: vi.fn(),
+                silly: vi.fn(),
             };
             
             const validator = new SecurityValidator(

@@ -204,11 +204,11 @@ export class CLIValidator {
         fieldName: string
     ): CLIOptionSecurityMeta | null {
     // Unwrap optional/nullable
-        let innerSchema = schema;
+        let innerSchema: z.ZodTypeAny = schema;
         let required = true;
 
         if (innerSchema instanceof z.ZodOptional || innerSchema instanceof z.ZodNullable) {
-            innerSchema = innerSchema.unwrap();
+            innerSchema = innerSchema.unwrap() as z.ZodTypeAny;
             required = false;
         }
 

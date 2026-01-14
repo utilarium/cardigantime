@@ -17,6 +17,8 @@ describe('SecurityAuditLogger', () => {
             warn: vi.fn(),
             error: vi.fn(),
             debug: vi.fn(),
+            verbose: vi.fn(),
+            silly: vi.fn(),
         };
     });
 
@@ -108,7 +110,7 @@ describe('SecurityAuditLogger', () => {
         it('should log validation failed event', () => {
             const logger = new SecurityAuditLogger(mockLogger);
             const errors = [
-                { field: 'path', code: 'PATH_TRAVERSAL' as const, message: 'Traversal detected', value: '../etc' },
+                { field: 'path', code: 'PATH_TRAVERSAL' as const, message: 'Traversal detected', value: '../etc', source: 'cli' as const },
             ];
             logger.validationFailed('cli', errors);
             
@@ -242,7 +244,7 @@ describe('SecurityAuditLogger', () => {
         it('should log critical events', () => {
             const logger = new SecurityAuditLogger(mockLogger, { minSeverity: 'critical' });
             // No critical events in current API, but error should still be filtered
-            logger.validationFailed('test', [{ field: 'x', code: 'PATH_TRAVERSAL', message: 'test', value: 'x' }]);
+            logger.validationFailed('test', [{ field: 'x', code: 'PATH_TRAVERSAL', message: 'test', value: 'x', source: 'cli' as const }]);
             expect(logger.getBufferedEvents()).toHaveLength(0);
         });
     });

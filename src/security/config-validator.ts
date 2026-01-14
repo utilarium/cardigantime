@@ -277,9 +277,9 @@ export class ConfigValidator {
    */
     private walkSchema(schema: z.ZodTypeAny, prefix: string): void {
     // Unwrap optional/nullable
-        let innerSchema = schema;
+        let innerSchema: z.ZodTypeAny = schema;
         if (innerSchema instanceof z.ZodOptional || innerSchema instanceof z.ZodNullable) {
-            innerSchema = innerSchema.unwrap();
+            innerSchema = innerSchema.unwrap() as z.ZodTypeAny;
         }
 
         if (innerSchema instanceof z.ZodObject) {
@@ -305,9 +305,9 @@ export class ConfigValidator {
         fieldPath: string,
         fieldName: string
     ): ConfigFieldSecurityMeta | null {
-        let innerSchema = schema;
+        let innerSchema: z.ZodTypeAny = schema;
         if (innerSchema instanceof z.ZodOptional || innerSchema instanceof z.ZodNullable) {
-            innerSchema = innerSchema.unwrap();
+            innerSchema = innerSchema.unwrap() as z.ZodTypeAny;
         }
 
         // Determine type and extract constraints
@@ -351,11 +351,20 @@ export class ConfigValidator {
         }
 
         if (innerSchema instanceof z.ZodArray) {
-            const elementMeta = this.extractMetaFromZod(innerSchema.element, '', '');
+            const elementMeta = this.extractMetaFromZod(innerSchema.element as z.ZodTypeAny, '', '');
+            if (elementMeta) {
+                // Remove fieldPath from element meta since arrayElementMeta uses Omit<..., 'fieldPath'>
+                // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                const { fieldPath: _removed, ...elementMetaWithoutPath } = elementMeta;
+                return {
+                    fieldPath,
+                    type: 'array',
+                    arrayElementMeta: elementMetaWithoutPath,
+                };
+            }
             return {
                 fieldPath,
                 type: 'array',
-                arrayElementMeta: elementMeta ? { ...elementMeta, fieldPath: '' } : undefined,
             };
         }
 
