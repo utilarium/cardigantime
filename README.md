@@ -214,8 +214,34 @@ Merges configuration from multiple sources in order of precedence:
 ### Multi-Format Configuration
 Supports YAML (`.yaml`, `.yml`), JSON (`.json`), JavaScript (`.js`, `.mjs`, `.cjs`), and TypeScript (`.ts`, `.mts`, `.cts`) configuration files. When multiple formats exist, Cardigantime uses automatic format detection with configurable priority.
 
+### Configuration Discovery
+
+Cardigantime automatically searches for configuration files using multiple naming conventions, similar to how tools like Vite, ESLint, and TypeScript work:
+
+| Priority | Pattern | Example |
+|----------|---------|---------|
+| 1 | `{app}.config.{ext}` | `myapp.config.yaml` |
+| 2 | `{app}.conf.{ext}` | `myapp.conf.yaml` |
+| 3 | `.{app}/config.{ext}` | `.myapp/config.yaml` |
+| 4 | `.{app}rc.{ext}` | `.myapprc.yaml` |
+| 5 | `.{app}rc` | `.myapprc` |
+
+Modern visible config files (like `myapp.config.yaml`) are checked first for better discoverability.
+
 ### Hierarchical Configuration Discovery
 Supports hierarchical configuration discovery, similar to how `.gitignore`, `.eslintrc`, or `package.json` work - searching up the directory tree for configuration directories.
+
+**Hierarchical Modes:**
+- `enabled` (default) - Merge configs from parent directories
+- `disabled` - Use only the config in the starting directory
+- `root-only` - Find first config, no merging
+- `explicit` - Only merge explicitly referenced configs
+
+```yaml
+# Disable hierarchical for isolated projects
+hierarchical:
+  mode: disabled
+```
 
 ### Type Safety & Validation
 Full TypeScript support with Zod schema validation for robust, type-safe configuration management.
