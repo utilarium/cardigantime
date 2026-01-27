@@ -29,7 +29,7 @@
     "dev": "vite build --watch",
     "watch": "vite build --watch",
     "test": "vitest run --coverage",
-    "precommit": "npm run lint && npm run test",
+    "precommit": "npm run lint && npm run build && npm run test",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "clean": "rm -rf dist",

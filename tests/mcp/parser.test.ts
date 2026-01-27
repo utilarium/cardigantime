@@ -441,7 +441,7 @@ describe('mergeMCPConfigWithDefaults', () => {
             server: {
                 port: 8080,
             },
-        };
+        } as Partial<typeof defaults>;
 
         const result = mergeMCPConfigWithDefaults(mcpConfig, defaults);
 
