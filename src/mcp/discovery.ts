@@ -65,7 +65,7 @@ export async function discoverFromTargetFile(
         const config = await options.cardigantime.read({
             ...options.args,
             configDirectory: targetDir,
-        });
+        }) as { resolvedConfigDirs?: string[] };
 
         // Extract source information from the loaded config
         if (config.resolvedConfigDirs && config.resolvedConfigDirs.length > 0) {
@@ -113,7 +113,7 @@ export async function discoverFromWorkingDirectory(
         const config = await options.cardigantime.read({
             ...options.args,
             configDirectory: workingDirectory,
-        });
+        }) as { resolvedConfigDirs?: string[] };
 
         // Extract source information
         if (config.resolvedConfigDirs && config.resolvedConfigDirs.length > 0) {
