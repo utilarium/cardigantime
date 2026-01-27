@@ -67,8 +67,11 @@ const config = create({
 
 This guide directory contains specialized documentation for different aspects of the system:
 
+*   [Integration Guide](./integration.md): **Start here** - Practical patterns for integrating Cardigantime into your application, including build configuration and version management.
 *   [Configuration](./configuration.md): Deep dive into configuration options and schema definition.
 *   [Usage Patterns](./usage.md): Common patterns for CLI integration, testing, and production setup.
 *   [Architecture](./architecture.md): Internal design, module structure, and data flow.
 *   [Development](./development.md): Guide for contributing to `cardigantime` itself.
+*   [MCP Configuration](./mcp-configuration.md): Guide for configuring CardiganTime-based tools via Model Context Protocol (MCP).
+*   [CheckConfig Tool](./check-config.md): Reference for the built-in CheckConfig diagnostic tool available in all MCP tools.
 

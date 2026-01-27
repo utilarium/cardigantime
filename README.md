@@ -131,6 +131,79 @@ async function main() {
 main().catch(console.error);
 ```
 
+### Version Information with Git Details
+
+Cardigantime exports its own version information including git commit details. You can also set up the same pattern in your own project.
+
+#### Using Cardigantime's Version
+
+```typescript
+import { VERSION, PROGRAM_NAME } from '@theunwalked/cardigantime';
+
+console.log(`Using ${PROGRAM_NAME}: ${VERSION}`);
+// Output: Using cardigantime: 0.0.22-dev.0 (working/a1b2c3d  2026-01-27 11:11:46 -0800) darwin arm64 v24.8.0
+```
+
+#### Setting Up Version Info in Your Own Project
+
+To add the same detailed version format to your own CLI application, add this to your `vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite';
+import replace from '@rollup/plugin-replace';
+import { execSync } from 'node:child_process';
+
+// Extract git information at build time
+let gitInfo = {
+    branch: '',
+    commit: '',
+    tags: '',
+    commitDate: '',
+};
+
+try {
+    gitInfo = {
+        branch: execSync('git rev-parse --abbrev-ref HEAD').toString().trim(),
+        commit: execSync('git rev-parse --short HEAD').toString().trim(),
+        tags: '',
+        commitDate: execSync('git log -1 --format=%cd --date=iso').toString().trim(),
+    };
+    
+    try {
+        gitInfo.tags = execSync('git tag --points-at HEAD | paste -sd "," -').toString().trim();
+    } catch {
+        gitInfo.tags = '';
+    }
+} catch {
+    console.log('Directory does not have a Git repository, skipping git info');
+}
+
+export default defineConfig({
+    plugins: [
+        replace({
+            '__VERSION__': process.env.npm_package_version,
+            '__GIT_BRANCH__': gitInfo.branch,
+            '__GIT_COMMIT__': gitInfo.commit,
+            '__GIT_TAGS__': gitInfo.tags === '' ? '' : `T:${gitInfo.tags}`,
+            '__GIT_COMMIT_DATE__': gitInfo.commitDate,
+            '__SYSTEM_INFO__': `${process.platform} ${process.arch} ${process.version}`,
+            preventAssignment: true,
+        }),
+        // ... your other plugins
+    ],
+    // ... rest of your config
+});
+```
+
+Then in your constants file:
+
+```typescript
+export const VERSION = '__VERSION__ (__GIT_BRANCH__/__GIT_COMMIT__ __GIT_TAGS__ __GIT_COMMIT_DATE__) __SYSTEM_INFO__';
+export const PROGRAM_NAME = 'myapp';
+```
+
+The placeholders will be replaced at build time with actual values. This is particularly useful for CLI applications where you need visibility into exactly which build is running.
+
 ### Configuration File Examples
 
 Cardigantime supports multiple configuration formats. Choose the one that best fits your workflow:
@@ -243,6 +316,25 @@ hierarchical:
   mode: disabled
 ```
 
+### MCP Integration
+First-class support for Model Context Protocol (MCP), enabling AI assistants to configure tools directly through MCP invocations. Includes:
+- **MCP Configuration Priority** - MCP config takes exclusive precedence when provided
+- **File-Based Fallback** - Automatic discovery from target file or working directory
+- **CheckConfig Tool** - Built-in diagnostic tool for all MCP tools
+- **Integration Helpers** - Simple APIs for adding MCP support to your tools
+
+```typescript
+import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+
+const integration = createMCPIntegration({
+  appName: 'myapp',
+  configSchema: myConfigSchema,
+});
+
+// CheckConfig tool is automatically available
+// Config resolution handles MCP and file-based sources
+```
+
 ### Type Safety & Validation
 Full TypeScript support with Zod schema validation for robust, type-safe configuration management.
 
@@ -256,6 +348,8 @@ Comprehensive error handling with detailed, actionable error messages to help us
 **Quick Links:**
 - [Getting Started Guide](https://utilarium.github.io/cardigantime/#getting-started) - Detailed setup and basic concepts
 - [Core Concepts](https://utilarium.github.io/cardigantime/#core-concepts) - Configuration sources, hierarchical discovery
+- [MCP Integration](https://utilarium.github.io/cardigantime/#mcp-integration) - Model Context Protocol support for AI assistants
+- [CheckConfig Tool](https://utilarium.github.io/cardigantime/#check-config-tool) - Built-in diagnostic tool
 - [API Reference](https://utilarium.github.io/cardigantime/#api-reference) - Complete API documentation
 - [Configuration Options](https://utilarium.github.io/cardigantime/#configuration-options) - All available options
 - [Debugging & Analysis](https://utilarium.github.io/cardigantime/#debugging-analysis) - Tools for analyzing config

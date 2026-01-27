@@ -33,6 +33,15 @@ Cardigantime merges configuration from multiple sources with a clear precedence 
 2. **Configuration file(s)** (medium priority)  
 3. **Schema defaults** (lowest priority)
 
+### MCP Configuration (Special Case)
+
+When using CardiganTime with Model Context Protocol (MCP), configuration follows a different model:
+
+- **MCP config present** → Use exclusively (no file fallback, no merging)
+- **MCP config absent** → Fall back to file-based discovery
+
+This "simplifying assumption" makes MCP configuration predictable. See [MCP Integration](mcp-integration.md) for details.
+
 ### Deep Merging Example
 
 Configuration isn't just replaced at the top level - Cardigantime performs intelligent deep merging:

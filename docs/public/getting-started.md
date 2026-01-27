@@ -382,10 +382,11 @@ try {
 Once you have basic configuration working:
 
 1. **[Core Concepts](core-concepts.md)** - Learn about hierarchical configuration and advanced features
-2. **[API Reference](api-reference.md)** - Explore all available methods and options
-3. **[Configuration Options](configuration-options.md)** - Customize path resolution, file encoding, etc.
-4. **[Debugging & Analysis](debugging-and-analysis.md)** - Master configuration troubleshooting tools
-5. **[Advanced Usage](advanced-usage.md)** - Complex schemas, custom loggers, and environment-specific setups
+2. **[MCP Integration](mcp-integration.md)** - Add Model Context Protocol support for AI assistants
+3. **[API Reference](api-reference.md)** - Explore all available methods and options
+4. **[Configuration Options](configuration-options.md)** - Customize path resolution, file encoding, etc.
+5. **[Debugging & Analysis](debugging-and-analysis.md)** - Master configuration troubleshooting tools
+6. **[Advanced Usage](advanced-usage.md)** - Complex schemas, custom loggers, and environment-specific setups
 
 ## Common Gotchas
 

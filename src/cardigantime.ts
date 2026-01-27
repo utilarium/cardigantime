@@ -14,6 +14,7 @@ import { FileSystemError } from './error/FileSystemError';
 
 export * from './types';
 export { ArgumentError, ConfigurationError, FileSystemError } from './validate';
+export { VERSION, PROGRAM_NAME } from './constants';
 
 /**
  * Creates a new Cardigantime instance for configuration management.

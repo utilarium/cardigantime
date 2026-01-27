@@ -4,6 +4,15 @@ import { ZodObject } from "zod";
 import { z } from "zod";
 import { SecurityValidationConfig } from "./security/types";
 
+// Re-export MCP types for convenience
+export type {
+    MCPConfigSource,
+    FileConfigSource,
+    ConfigSource,
+    ResolvedConfig,
+    MCPInvocationContext,
+} from "./mcp/types";
+
 /**
  * Available features that can be enabled in Cardigantime.
  * Currently supports:
@@ -52,8 +61,11 @@ export interface ConfigParser<T = unknown> {
 /**
  * Metadata about where a configuration value came from.
  * Used for tracking configuration sources and debugging.
+ * 
+ * @deprecated Use FileConfigSource from ./mcp/types instead.
+ * This type is kept for backward compatibility and will be removed in a future version.
  */
-export interface ConfigSource {
+export interface LegacyConfigSource {
     /** The format of the configuration file */
     format: ConfigFormat;
     /** Absolute path to the configuration file */
@@ -130,8 +142,10 @@ export interface DefaultOptions {
     /**
      * Optional source metadata for tracking where configuration came from.
      * Populated automatically when configuration is loaded.
+     * 
+     * @deprecated Use the new ConfigSource union type from ./mcp/types instead.
      */
-    source?: ConfigSource;
+    source?: LegacyConfigSource;
     /**
      * Allow executable configuration files (JavaScript/TypeScript).
      * 
