@@ -104,7 +104,7 @@ A Cardigantime instance with the following methods:
 ### Example
 
 ```typescript
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 const ConfigSchema = z.object({
@@ -682,7 +682,7 @@ const cardigantime = create({
 ### Error Handling
 
 ```typescript
-import { ConfigurationError, FileSystemError, ArgumentError } from '@theunwalked/cardigantime';
+import { ConfigurationError, FileSystemError, ArgumentError } from '@utilarium/cardigantime';
 
 try {
   const config = await cardigantime.read(args);

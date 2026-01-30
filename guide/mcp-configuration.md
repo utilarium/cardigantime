@@ -131,7 +131,7 @@ Every CardiganTime-based MCP tool automatically includes the `check_config` tool
 ### Basic Integration
 
 ```typescript
-import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
 
 const integration = createMCPIntegration({
   appName: 'myapp',

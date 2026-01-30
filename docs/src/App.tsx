@@ -151,7 +151,7 @@ function App() {
                         <a href="https://github.com/utilarium/cardigantime" target="_blank" rel="noopener noreferrer">
                             GitHub
                         </a>
-                        <a href="https://www.npmjs.com/package/@theunwalked/cardigantime" target="_blank" rel="noopener noreferrer">
+                        <a href="https://www.npmjs.com/package/@utilarium/cardigantime" target="_blank" rel="noopener noreferrer">
                             NPM
                         </a>
                     </div>

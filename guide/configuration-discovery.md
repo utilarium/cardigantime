@@ -106,7 +106,7 @@ const options = {
 ### Basic Discovery
 
 ```typescript
-import { discoverConfig } from '@theunwalked/cardigantime/discovery';
+import { discoverConfig } from '@utilarium/cardigantime/discovery';
 
 const result = await discoverConfig('/project/src', {
   appName: 'myapp',
@@ -121,7 +121,7 @@ if (result.config) {
 ### Hierarchical Discovery
 
 ```typescript
-import { discoverWithMode } from '@theunwalked/cardigantime/discovery';
+import { discoverWithMode } from '@utilarium/cardigantime/discovery';
 
 const result = await discoverWithMode(
   '/project/src',

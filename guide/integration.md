@@ -6,7 +6,7 @@
 
 When integrating Cardigantime into a new project:
 
-1. ✅ Install dependencies (`@theunwalked/cardigantime`, `commander`, `zod`)
+1. ✅ Install dependencies (`@utilarium/cardigantime`, `commander`, `zod`)
 2. ✅ Define your configuration schema with Zod
 3. ✅ Create a Cardigantime instance with your schema
 4. ✅ Integrate with Commander.js
@@ -53,7 +53,7 @@ export type AppConfig = z.infer<typeof AppConfigSchema>;
 
 ```typescript
 // src/config/index.ts
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { AppConfigSchema } from './schema';
 
 export const configManager = create({
@@ -331,7 +331,7 @@ When multiple formats exist, Cardigantime uses:
 For straightforward CLI tools with basic configuration:
 
 ```typescript
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { Command } from 'commander';
 import { z } from 'zod';
 
@@ -397,7 +397,7 @@ For testing applications that use Cardigantime:
 
 ```typescript
 // test/helpers/config.ts
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { AppConfigSchema } from '../../src/config/schema';
 
 export function createTestConfig(overrides = {}) {
@@ -461,8 +461,8 @@ const configManager = create({
 Cardigantime itself uses this pattern:
 
 ```typescript
-// From @theunwalked/cardigantime
-import { VERSION, PROGRAM_NAME } from '@theunwalked/cardigantime';
+// From @utilarium/cardigantime
+import { VERSION, PROGRAM_NAME } from '@utilarium/cardigantime';
 
 console.log(`Using ${PROGRAM_NAME}: ${VERSION}`);
 // Output: Using cardigantime: 0.0.22-dev.0 (working/a1b2c3d  2026-01-27 11:11:46 -0800) darwin arm64 v24.8.0

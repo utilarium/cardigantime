@@ -8,7 +8,7 @@
 
 ```typescript
 import { Command } from 'commander';
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 
 // 1. Setup
 const program = new Command();

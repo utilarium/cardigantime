@@ -43,7 +43,7 @@ them effectively.
 ### Enable Security Validation
 
 ```typescript
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 const cardigantime = create({
@@ -68,7 +68,7 @@ const cardigantime = create({
 ### Use Secure Schema Extensions
 
 ```typescript
-import { securePath, secureNumber, secureString } from '@theunwalked/cardigantime';
+import { securePath, secureNumber, secureString } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -108,7 +108,7 @@ const schema = z.object({
 ### Custom Profile
 
 ```typescript
-import { createProfile } from '@theunwalked/cardigantime';
+import { createProfile } from '@utilarium/cardigantime';
 
 const customConfig = createProfile('production')
   .restrictPathsTo(['/app/config', '/app/data'])
@@ -242,7 +242,7 @@ secureString({
 Runtime path validation with comprehensive security checks.
 
 ```typescript
-import { createPathGuard } from '@theunwalked/cardigantime';
+import { createPathGuard } from '@utilarium/cardigantime';
 
 const guard = createPathGuard({
   allowedBaseDirs: ['/app/config'],
@@ -258,7 +258,7 @@ guard.validate('../../../etc/passwd'); // Throws
 Runtime numeric validation with bounds checking.
 
 ```typescript
-import { createNumericGuard, SAFE_RANGES } from '@theunwalked/cardigantime';
+import { createNumericGuard, SAFE_RANGES } from '@utilarium/cardigantime';
 
 const guard = createNumericGuard();
 
@@ -271,7 +271,7 @@ guard.validateRange(8080, 'port'); // OK using preset
 Runtime string validation with pattern matching.
 
 ```typescript
-import { createStringGuard } from '@theunwalked/cardigantime';
+import { createStringGuard } from '@utilarium/cardigantime';
 
 const guard = createStringGuard();
 
@@ -286,7 +286,7 @@ guard.detectInjection("'; DROP TABLE users;"); // { suspicious: true }
 Unified validation across CLI and config sources.
 
 ```typescript
-import { createSecurityValidator } from '@theunwalked/cardigantime';
+import { createSecurityValidator } from '@utilarium/cardigantime';
 
 const validator = createSecurityValidator({ profile: 'production' });
 validator.registerSchema(schema);
@@ -309,7 +309,7 @@ const schema = z.object({
 
 **After:**
 ```typescript
-import { securePath, secureNumber, secureString } from '@theunwalked/cardigantime';
+import { securePath, secureNumber, secureString } from '@utilarium/cardigantime';
 
 const schema = z.object({
   configPath: securePath({ allowedExtensions: ['.yaml'] }),

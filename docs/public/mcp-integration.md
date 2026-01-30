@@ -36,7 +36,7 @@ This makes configuration predictable and easy to debug.
 Add MCP support to your CardiganTime-based tool:
 
 ```typescript
-import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
 import { z } from 'zod';
 
 // Define your config schema
@@ -191,7 +191,7 @@ Shows only summary information without exposing configuration values.
 Resolve configuration manually in each tool handler:
 
 ```typescript
-import { createConfigResolver } from '@theunwalked/cardigantime/mcp';
+import { createConfigResolver } from '@utilarium/cardigantime/mcp';
 
 const resolveConfig = createConfigResolver({
   appName: 'myapp',
@@ -211,7 +211,7 @@ async function myToolHandler(input: any, context: MCPInvocationContext) {
 Automatically inject config into your handlers:
 
 ```typescript
-import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
 
 const integration = createMCPIntegration({
   appName: 'myapp',
@@ -237,7 +237,7 @@ server.registerTool('my_tool', wrappedHandler);
 Use all integration helpers together:
 
 ```typescript
-import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
 
 const integration = createMCPIntegration({
   appName: 'myapp',

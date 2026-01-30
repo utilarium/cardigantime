@@ -56,11 +56,11 @@ Users of tools built with Cardigantime benefit from a consistent, powerful confi
 ## Installation
 
 ```bash
-npm install @theunwalked/cardigantime
+npm install @utilarium/cardigantime
 # or
-yarn add @theunwalked/cardigantime
+yarn add @utilarium/cardigantime
 # or
-pnpm add @theunwalked/cardigantime
+pnpm add @utilarium/cardigantime
 ```
 
 ## Quick Start
@@ -69,7 +69,7 @@ Here's a complete example of building a CLI tool with Cardigantime:
 
 ```typescript
 import { Command } from 'commander';
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 // Define your configuration schema using Zod
@@ -138,7 +138,7 @@ Cardigantime exports its own version information including git commit details. Y
 #### Using Cardigantime's Version
 
 ```typescript
-import { VERSION, PROGRAM_NAME } from '@theunwalked/cardigantime';
+import { VERSION, PROGRAM_NAME } from '@utilarium/cardigantime';
 
 console.log(`Using ${PROGRAM_NAME}: ${VERSION}`);
 // Output: Using cardigantime: 0.0.22-dev.0 (working/a1b2c3d  2026-01-27 11:11:46 -0800) darwin arm64 v24.8.0
@@ -352,7 +352,7 @@ First-class support for Model Context Protocol (MCP), enabling AI assistants to 
 - **Integration Helpers** - Simple APIs for adding MCP support to your tools
 
 ```typescript
-import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
 
 const integration = createMCPIntegration({
   appName: 'myapp',

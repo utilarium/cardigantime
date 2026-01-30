@@ -150,7 +150,7 @@ await discoverConfig(directory, {
 Discover a single configuration file:
 
 ```typescript
-import { discoverConfig } from '@theunwalked/cardigantime/discovery';
+import { discoverConfig } from '@utilarium/cardigantime/discovery';
 
 const result = await discoverConfig('/project', {
   appName: 'myapp',
@@ -174,7 +174,7 @@ if (result.multipleConfigWarning) {
 Discover with hierarchical mode support:
 
 ```typescript
-import { discoverWithMode } from '@theunwalked/cardigantime/discovery';
+import { discoverWithMode } from '@utilarium/cardigantime/discovery';
 
 const result = await discoverWithMode(
   '/project/src/deep',
@@ -192,7 +192,7 @@ console.log(`Should merge: ${result.shouldMerge}`);
 Quick check if any config exists:
 
 ```typescript
-import { hasConfigFile } from '@theunwalked/cardigantime/discovery';
+import { hasConfigFile } from '@utilarium/cardigantime/discovery';
 
 const exists = await hasConfigFile('/project', {
   appName: 'myapp',

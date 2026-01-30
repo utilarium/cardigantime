@@ -49,7 +49,7 @@ When analyzing or generating code using `cardigantime`, keep these patterns in m
 4.  **Read Config**: Use `.read(options)` to load and validate.
 
 ```typescript
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 const schema = z.object({
