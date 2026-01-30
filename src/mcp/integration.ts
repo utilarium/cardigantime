@@ -31,7 +31,7 @@ export interface MCPIntegrationOptions {
 
     /**
      * Base URL for documentation links.
-     * @default "https://github.com/theunwalked/cardigantime"
+     * @default "https://github.com/utilarium/cardigantime"
      */
     docsBaseUrl?: string;
 
@@ -54,7 +54,7 @@ export interface MCPIntegrationOptions {
  * 
  * @example
  * ```typescript
- * import { createCheckConfigTool } from '@theunwalked/cardigantime/mcp';
+ * import { createCheckConfigTool } from '@utilarium/cardigantime/mcp';
  * 
  * const checkConfigTool = createCheckConfigTool({
  *   appName: 'myapp',
@@ -97,7 +97,7 @@ export function createCheckConfigTool(options: MCPIntegrationOptions) {
  * 
  * @example
  * ```typescript
- * import { createConfigResolver } from '@theunwalked/cardigantime/mcp';
+ * import { createConfigResolver } from '@utilarium/cardigantime/mcp';
  * 
  * const resolveMyConfig = createConfigResolver({
  *   appName: 'myapp',
@@ -140,7 +140,7 @@ export function createConfigResolver<T = unknown>(
  * 
  * @example
  * ```typescript
- * import { withConfig } from '@theunwalked/cardigantime/mcp';
+ * import { withConfig } from '@utilarium/cardigantime/mcp';
  * 
  * // Your tool handler
  * async function myTool(input: any, context: any) {
@@ -191,7 +191,7 @@ export function withConfig<TInput = any, TOutput = any, TConfig = unknown>(
  * 
  * @example
  * ```typescript
- * import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+ * import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
  * 
  * const integration = createMCPIntegration({
  *   appName: 'myapp',
