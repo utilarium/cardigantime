@@ -4,25 +4,27 @@ import { PathSecurityOptions, SecurityValidationError } from './types';
 
 /**
  * All known path traversal patterns including encoded variants.
+ * Note: No global flag to avoid state persistence issues with .test()
  */
 const TRAVERSAL_PATTERNS = [
-    /\.\.\//g,              // Unix parent: ../
-    /\.\.\\/g,              // Windows parent: ..\
-    /%2e%2e/gi,             // URL encoded: %2e%2e
-    /%252e%252e/gi,         // Double encoded
-    /\.%2e/gi,              // Mixed: .%2e
-    /%2e\./gi,              // Mixed: %2e.
-    /\.\.[/\\]/g,           // Standard variants
+    /\.\.\//,               // Unix parent: ../
+    /\.\.\\/,               // Windows parent: ..\
+    /%2e%2e/i,             // URL encoded: %2e%2e
+    /%252e%252e/i,         // Double encoded
+    /\.%2e/i,              // Mixed: .%2e
+    /%2e\./i,              // Mixed: %2e.
+    /\.\.[/\\]/,           // Standard variants
 ];
 
 /**
  * Null byte and special character patterns.
  * These patterns intentionally match control characters for security validation.
+ * Note: No global flag to avoid state persistence issues with .test()
  */
 /* eslint-disable no-control-regex */
 const DANGEROUS_CHARS = [
-    /\0/g,                  // Null byte (truncation attacks)
-    /[\x00-\x1f]/g,         // Control characters
+    /\0/,                   // Null byte (truncation attacks)
+    /[\x00-\x1f]/,         // Control characters
 ];
 /* eslint-enable no-control-regex */
 
