@@ -144,8 +144,8 @@ export async function discoverFromWorkingDirectory(
  * 
  * @example
  * ```typescript
- * import { createFileDiscovery } from '@theunwalked/cardigantime/mcp';
- * import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+ * import { createFileDiscovery } from '@utilarium/cardigantime/mcp';
+ * import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
  * 
  * const fileDiscovery = createFileDiscovery({
  *   cardigantime: myCardiganTimeInstance,
