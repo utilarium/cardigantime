@@ -40,7 +40,7 @@ export { VERSION, PROGRAM_NAME } from './constants';
  * 
  * @example
  * ```typescript
- * import { create } from '@theunwalked/cardigantime';
+ * import { create } from '@utilarium/cardigantime';
  * import { z } from 'zod';
  * 
  * const MyConfigSchema = z.object({
@@ -206,7 +206,7 @@ export const create = <T extends z.ZodRawShape>(pOptions: {
  * @example
  * ```typescript
  * // config.ts
- * import { defineConfig } from '@theunwalked/cardigantime';
+ * import { defineConfig } from '@utilarium/cardigantime';
  * 
  * export default defineConfig({
  *   apiKey: process.env.API_KEY || 'default-key',
