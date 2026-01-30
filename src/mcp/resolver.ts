@@ -134,7 +134,7 @@ export async function resolveConfig<T = unknown>(
                 hierarchical: fileSource.parents !== undefined && fileSource.parents.length > 0,
                 resolution: explainFileResolution(fileSource),
             };
-        } catch (_error) {
+        } catch {
             logger?.debug('File-based discovery failed, trying environment variables');
         }
     }
