@@ -20,9 +20,15 @@ export function extractSchemaFields(schema: ZodObject<any>): string[] {
     for (const [key, value] of Object.entries(schema.shape)) {
         fields.push(key);
 
+        // Unwrap Optional/Nullable wrappers to check for nested objects
+        let unwrapped = value;
+        if (unwrapped instanceof z.ZodOptional || unwrapped instanceof z.ZodNullable) {
+            unwrapped = unwrapped.unwrap();
+        }
+
         // Handle nested objects
-        if (value instanceof z.ZodObject) {
-            const nestedFields = extractSchemaFields(value);
+        if (unwrapped instanceof z.ZodObject) {
+            const nestedFields = extractSchemaFields(unwrapped);
             fields.push(...nestedFields.map(f => `${key}.${f}`));
         }
     }
@@ -58,6 +64,10 @@ export function getSchemaForField(
             current = current.shape[part];
             if (!current) {
                 throw new Error(`Field not found in schema: ${fieldPath}`);
+            }
+            // Unwrap Optional/Nullable wrappers to continue navigation
+            if (current instanceof z.ZodOptional || current instanceof z.ZodNullable) {
+                current = current.unwrap();
             }
         } else {
             throw new Error(`Cannot navigate to field: ${fieldPath}`);
