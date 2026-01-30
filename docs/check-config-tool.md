@@ -253,7 +253,7 @@ const result = await checkConfig({ includeConfig: false });
 CheckConfig is automatically available when you use CardiganTime's MCP server helpers. No manual registration required.
 
 ```typescript
-import { createMCPServer } from '@theunwalked/cardigantime';
+import { createMCPServer } from '@utilarium/cardigantime';
 
 const server = createMCPServer({
   name: 'my-tool',

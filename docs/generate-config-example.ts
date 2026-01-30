@@ -1,5 +1,5 @@
 /* eslint-disable no-console, import/no-extraneous-dependencies */
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 // Define a comprehensive configuration schema with default values

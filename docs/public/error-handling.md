@@ -13,7 +13,7 @@ import {
   ConfigurationError, 
   FileSystemError, 
   ArgumentError 
-} from '@theunwalked/cardigantime';
+} from '@utilarium/cardigantime';
 ```
 
 ### `ConfigurationError`
@@ -70,7 +70,7 @@ class ArgumentError extends Error {
 ### Simple Error Handling Pattern
 
 ```typescript
-import { create, ConfigurationError, FileSystemError, ArgumentError } from '@theunwalked/cardigantime';
+import { create, ConfigurationError, FileSystemError, ArgumentError } from '@utilarium/cardigantime';
 
 async function setupApp() {
   const cardigantime = create({

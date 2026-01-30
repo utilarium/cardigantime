@@ -1,6 +1,6 @@
 {
-  "name": "@theunwalked/cardigantime",
-  "version": "0.0.23",
+  "name": "@utilarium/cardigantime",
+  "version": "0.0.24",
   "description": "cardigantime is a tool to help you time your cardigans.",
   "type": "module",
   "main": "./dist/cardigantime.cjs",
@@ -56,26 +56,27 @@
     "commander": "^14.0.0",
     "glob": "^13.0.0",
     "js-yaml": "^4.1.0",
-    "zod": "^4.0.2"
+    "yn": "^5.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.30.1",
     "@rollup/plugin-replace": "^6.0.2",
-    "@swc/core": "^1.12.11",
+    "@swc/core": "^1.15.11",
     "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.0.3",
-    "@typescript-eslint/eslint-plugin": "^8.36.0",
-    "@typescript-eslint/parser": "^8.36.0",
-    "@vitest/coverage-v8": "^4.0.16",
+    "@types/node": "^25.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.54.0",
+    "@typescript-eslint/parser": "^8.54.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^9.30.1",
     "eslint-plugin-import": "^2.32.0",
-    "globals": "^17.0.0",
+    "globals": "^17.2.0",
     "typescript": "^5.8.3",
     "vite": "^7.0.4",
     "vite-plugin-dts": "^4.5.4",
     "vite-plugin-node": "^7.0.0",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.18"
   },
   "overrides": {
     "wrap-ansi": "7.0.0"

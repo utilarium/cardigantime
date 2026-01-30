@@ -74,11 +74,48 @@ export interface FileConfigSource {
 }
 
 /**
+ * Configuration source from environment variables.
+ * 
+ * Environment variables provide a system-wide way to configure applications.
+ * This type tracks which environment variables were read and their values.
+ * 
+ * @example
+ * ```typescript
+ * const envSource: EnvVarConfigSource = {
+ *   type: 'env',
+ *   variables: new Map([
+ *     ['MYAPP_PORT', { value: '3000', isCustom: false }],
+ *     ['OPENAI_API_KEY', { value: 'sk-...', isCustom: true }],
+ *   ]),
+ *   readAt: new Date(),
+ * };
+ * ```
+ */
+export interface EnvVarConfigSource {
+    /** Source type discriminator */
+    type: 'env';
+    
+    /**
+     * Map of environment variable names to their values.
+     * Keys are the actual env var names (e.g., 'MYAPP_PORT').
+     * Values indicate whether custom mapping was used.
+     */
+    variables: Map<string, { value: string; isCustom: boolean }>;
+    
+    /**
+     * Timestamp when the environment variables were read.
+     * Used for debugging and cache invalidation.
+     */
+    readAt: Date;
+}
+
+/**
  * Union type representing all possible configuration sources.
  * 
- * Configuration can come from either:
+ * Configuration can come from:
  * - MCP server invocation (for AI assistant tools)
  * - File on the filesystem (traditional config files)
+ * - Environment variables (system-wide configuration)
  * 
  * Use the `type` discriminator to determine which source type you have.
  * 
@@ -87,13 +124,15 @@ export interface FileConfigSource {
  * function handleConfig(source: ConfigSource) {
  *   if (source.type === 'mcp') {
  *     console.log('Config from MCP:', source.rawConfig);
- *   } else {
+ *   } else if (source.type === 'file') {
  *     console.log('Config from file:', source.filePath);
+ *   } else {
+ *     console.log('Config from env vars:', source.variables.size);
  *   }
  * }
  * ```
  */
-export type ConfigSource = MCPConfigSource | FileConfigSource;
+export type ConfigSource = MCPConfigSource | FileConfigSource | EnvVarConfigSource;
 
 /**
  * A fully resolved configuration with source tracking.

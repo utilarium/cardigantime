@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { z } from 'zod';
 import {
     resolveConfig,
     explainResolution,
     isMCPConfig,
     isFileConfig,
+    isEnvConfig,
     getConfigFiles,
     MCPContextError,
     MCPInvocationContext,
@@ -180,7 +181,7 @@ describe('resolveConfig', () => {
         });
 
         expect(logger.debug).toHaveBeenCalledWith(
-            expect.stringContaining('falling back to file-based discovery')
+            expect.stringContaining('trying file-based discovery')
         );
         expect(logger.info).toHaveBeenCalledWith(
             expect.stringContaining('Configuration loaded from file')
@@ -484,5 +485,159 @@ describe('getConfigFiles', () => {
             '/app/src/config.yaml',
             '/app/config.yaml',
         ]);
+    });
+});
+
+describe('resolveConfig with environment variables', () => {
+    const testSchema = z.object({
+        port: z.number(),
+        host: z.string(),
+    });
+
+    beforeEach(() => {
+        delete process.env.TESTAPP_PORT;
+        delete process.env.TESTAPP_HOST;
+    });
+
+    afterEach(() => {
+        delete process.env.TESTAPP_PORT;
+        delete process.env.TESTAPP_HOST;
+        delete process.env.CUSTOM_PORT;
+    });
+
+    it('should resolve from env vars when file config not found', async () => {
+        process.env.TESTAPP_PORT = '3000';
+        process.env.TESTAPP_HOST = 'localhost';
+
+        const context: MCPInvocationContext = {
+            workingDirectory: '/app',
+        };
+
+        const resolveFileConfig = vi.fn().mockRejectedValue(new Error('File not found'));
+
+        const result = await resolveConfig(context, {
+            schema: testSchema,
+            appName: 'testapp',
+            resolveFileConfig,
+        });
+
+        expect(result.source.type).toBe('env');
+        expect(result.config).toEqual({
+            port: 3000,
+            host: 'localhost',
+        });
+        expect(result.hierarchical).toBe(false);
+    });
+
+    it('should respect disableEnvVars flag', async () => {
+        process.env.TESTAPP_PORT = '3000';
+        process.env.TESTAPP_HOST = 'localhost';
+
+        const context: MCPInvocationContext = {
+            workingDirectory: '/app',
+        };
+
+        const resolveFileConfig = vi.fn().mockRejectedValue(new Error('File not found'));
+
+        await expect(
+            resolveConfig(context, {
+                schema: testSchema,
+                appName: 'testapp',
+                disableEnvVars: true,
+                resolveFileConfig,
+            })
+        ).rejects.toThrow(MCPContextError);
+    });
+
+    it('should use custom env var mappings', async () => {
+        process.env.CUSTOM_PORT = '8080';
+        process.env.TESTAPP_HOST = 'example.com';
+
+        const context: MCPInvocationContext = {
+            workingDirectory: '/app',
+        };
+
+        const resolveFileConfig = vi.fn().mockRejectedValue(new Error('File not found'));
+
+        const result = await resolveConfig(context, {
+            schema: testSchema,
+            appName: 'testapp',
+            envVarMap: {
+                port: 'CUSTOM_PORT',
+            },
+            resolveFileConfig,
+        });
+
+        expect(result.config).toEqual({
+            port: 8080,
+            host: 'example.com',
+        });
+    });
+
+    it('should prefer file config over env vars', async () => {
+        process.env.TESTAPP_PORT = '3000';
+        process.env.TESTAPP_HOST = 'localhost';
+
+        const context: MCPInvocationContext = {
+            workingDirectory: '/app',
+        };
+
+        const mockFileSource: FileConfigSource = {
+            type: 'file',
+            filePath: '/app/config.yaml',
+            format: ConfigFormat.YAML,
+        };
+
+        const resolveFileConfig = vi.fn().mockResolvedValue(mockFileSource);
+
+        const result = await resolveConfig(context, {
+            schema: testSchema,
+            appName: 'testapp',
+            resolveFileConfig,
+        });
+
+        // Should use file config, not env vars
+        expect(result.source.type).toBe('file');
+    });
+
+    it('should prefer MCP config over env vars', async () => {
+        process.env.TESTAPP_PORT = '3000';
+        process.env.TESTAPP_HOST = 'localhost';
+
+        const context: MCPInvocationContext = {
+            config: {
+                port: 8080,
+                host: 'mcp-host',
+            },
+            workingDirectory: '/app',
+        };
+
+        const result = await resolveConfig(context, {
+            schema: testSchema,
+            appName: 'testapp',
+        });
+
+        // Should use MCP config, not env vars
+        expect(result.source.type).toBe('mcp');
+        expect(result.config).toEqual({
+            port: 8080,
+            host: 'mcp-host',
+        });
+    });
+
+    it('should throw when no config source available', async () => {
+        const context: MCPInvocationContext = {
+            workingDirectory: '/app',
+        };
+
+        const resolveFileConfig = vi.fn().mockRejectedValue(new Error('File not found'));
+
+        await expect(
+            resolveConfig(context, {
+                schema: testSchema,
+                appName: 'testapp',
+                resolveFileConfig,
+            })
+        ).rejects.toThrow(MCPContextError);
     });
 });

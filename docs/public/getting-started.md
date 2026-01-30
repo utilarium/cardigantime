@@ -21,11 +21,11 @@ As a tool developer, you'll define your configuration schema once with Zod, and 
 ## Installation
 
 ```bash
-npm install @theunwalked/cardigantime commander zod
+npm install @utilarium/cardigantime commander zod
 # or
-yarn add @theunwalked/cardigantime commander zod
+yarn add @utilarium/cardigantime commander zod
 # or
-pnpm add @theunwalked/cardigantime commander zod
+pnpm add @utilarium/cardigantime commander zod
 ```
 
 ## Basic Setup
@@ -64,7 +64,7 @@ export type MyConfig = z.infer<typeof MyConfigSchema>;
 ### 2. Create Cardigantime Instance
 
 ```typescript
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 
 const cardigantime = create({
   defaults: {

@@ -9,7 +9,7 @@ Traditional configuration systems often replace entire objects when merging conf
 **Parent config:**
 ```yaml
 scopeRoots:
-  "@theunwalked": "../../tobrien"
+  "@utilarium": "../../tobrien"
   "@riotprompt": "../../tobrien"
 ```
 
@@ -29,7 +29,7 @@ Cardigantime automatically performs **deep merging**, which means nested objects
 ```yaml
 scopeRoots:
   "@powerfuck": "../../powerfuck"        # From child config
-  "@theunwalked": "../../"  # From parent config  
+  "@utilarium": "../../"  # From parent config  
   "@riotprompt": "../../StJustReckoning"      # From parent config
 ```
 
@@ -38,7 +38,7 @@ scopeRoots:
 ### 1. Enable Hierarchical Discovery
 
 ```typescript
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 
 const cardigantime = create({
   defaults: {
@@ -71,7 +71,7 @@ const cardigantime = create({
 ```yaml
 link:
 scopeRoots:
-  "@theunwalked": "../../tobrien"
+  "@utilarium": "../../tobrien"
   "@riotprompt": "../../tobrien"
 database:
   host: localhost
@@ -103,7 +103,7 @@ link:
 scopeRoots:
   "@local": "./local-modules"           # From Level 0
   "@powerfuck": "../../powerfuck"       # From Level 1
-  "@theunwalked": "../../tobrien"  # From Level 2
+  "@utilarium": "../../tobrien"  # From Level 2
   "@riotprompt": "../../tobrien"      # From Level 2
 database:
   host: localhost                       # From Level 2
@@ -135,7 +135,7 @@ This is perfect for the MyApp scenario mentioned in your question:
 ```yaml
 link:
 scopeRoots:
-  "@theunwalked": "../../tobrien"
+  "@utilarium": "../../tobrien"
   "@riotprompt": "../../tobrien"
 ```
 
@@ -151,7 +151,7 @@ scopeRoots:
 link:
 scopeRoots:
   "@powerfuck": "../../powerfuck"
-  "@theunwalked": "../../tobrien"
+  "@utilarium": "../../tobrien"
   "@riotprompt": "../../tobrien"
 ```
 
@@ -303,13 +303,13 @@ const cardigantime = create({
 You can test this functionality directly using the `deepMergeConfigs` function:
 
 ```typescript
-import { deepMergeConfigs } from '@theunwalked/cardigantime/dist/util/hierarchical';
+import { deepMergeConfigs } from '@utilarium/cardigantime/dist/util/hierarchical';
 
 const configs = [
   // Lower precedence
   {
     scopeRoots: {
-      "@theunwalked": "../../tobrien",
+      "@utilarium": "../../tobrien",
       "@riotprompt": "../../tobrien"
     }
   },

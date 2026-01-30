@@ -23,7 +23,7 @@ console.log('This demonstrates deep merging of nested objects like scopeRoots.\n
 const lowerPrecedenceConfig = {
     link: null,
     scopeRoots: {
-        "@theunwalked": "../../tobrien",
+        "@utilarium": "../../tobrien",
         "@riotprompt": "../../tobrien"
     }
 };

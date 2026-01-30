@@ -508,7 +508,7 @@ describe('Hierarchical Configuration', () => {
                 {
                     link: null,
                     scopeRoots: {
-                        "@theunwalked": "../../tobrien",
+                        "@utilarium": "../../tobrien",
                         "@riotprompt": "../../tobrien"
                     }
                 },
@@ -527,7 +527,7 @@ describe('Hierarchical Configuration', () => {
                 link: null,
                 scopeRoots: {
                     "@powerfuck": "../../powerfuck",        // From higher precedence config
-                    "@theunwalked": "../../tobrien", // From lower precedence config
+                    "@utilarium": "../../tobrien", // From lower precedence config
                     "@riotprompt": "../../tobrien"  // From lower precedence config
                 }
             });

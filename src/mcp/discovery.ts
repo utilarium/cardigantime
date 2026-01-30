@@ -12,6 +12,9 @@ import path from 'path';
 import { Cardigantime } from '../types';
 import { FileConfigSource } from './types';
 import { ConfigFormat } from '../types';
+import { detectConfigFormat } from '../config/format-detector';
+import { create as createStorage } from '../util/storage';
+import { DEFAULT_CONFIG_FILE } from '../constants';
 
 /**
  * Options for file-based configuration discovery.
@@ -72,10 +75,22 @@ export async function discoverFromTargetFile(
             // Build FileConfigSource from the resolved config
             const primaryDir = config.resolvedConfigDirs[0];
             
+            // Detect the actual config file format
+            const storage = createStorage({ log: () => {} });
+            const configFileName = options.args?.configFile || DEFAULT_CONFIG_FILE;
+            const detectedFormat = await detectConfigFormat({
+                configFileName,
+                configDirectory: primaryDir,
+                storage,
+            });
+            
+            const format = detectedFormat?.format || ConfigFormat.YAML;
+            const filePath = detectedFormat?.filePath || path.join(primaryDir, configFileName);
+            
             return {
                 type: 'file',
-                filePath: path.join(primaryDir, 'config'), // Simplified
-                format: ConfigFormat.YAML, // Default, would need detection
+                filePath,
+                format,
             };
         }
 
@@ -119,10 +134,22 @@ export async function discoverFromWorkingDirectory(
         if (config.resolvedConfigDirs && config.resolvedConfigDirs.length > 0) {
             const primaryDir = config.resolvedConfigDirs[0];
             
+            // Detect the actual config file format
+            const storage = createStorage({ log: () => {} });
+            const configFileName = options.args?.configFile || DEFAULT_CONFIG_FILE;
+            const detectedFormat = await detectConfigFormat({
+                configFileName,
+                configDirectory: primaryDir,
+                storage,
+            });
+            
+            const format = detectedFormat?.format || ConfigFormat.YAML;
+            const filePath = detectedFormat?.filePath || path.join(primaryDir, configFileName);
+            
             return {
                 type: 'file',
-                filePath: path.join(primaryDir, 'config'),
-                format: ConfigFormat.YAML,
+                filePath,
+                format,
             };
         }
 
@@ -144,8 +171,8 @@ export async function discoverFromWorkingDirectory(
  * 
  * @example
  * ```typescript
- * import { createFileDiscovery } from '@theunwalked/cardigantime/mcp';
- * import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+ * import { createFileDiscovery } from '@utilarium/cardigantime/mcp';
+ * import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
  * 
  * const fileDiscovery = createFileDiscovery({
  *   cardigantime: myCardiganTimeInstance,

@@ -56,11 +56,11 @@ Users of tools built with Cardigantime benefit from a consistent, powerful confi
 ## Installation
 
 ```bash
-npm install @theunwalked/cardigantime
+npm install @utilarium/cardigantime
 # or
-yarn add @theunwalked/cardigantime
+yarn add @utilarium/cardigantime
 # or
-pnpm add @theunwalked/cardigantime
+pnpm add @utilarium/cardigantime
 ```
 
 ## Quick Start
@@ -69,7 +69,7 @@ Here's a complete example of building a CLI tool with Cardigantime:
 
 ```typescript
 import { Command } from 'commander';
-import { create } from '@theunwalked/cardigantime';
+import { create } from '@utilarium/cardigantime';
 import { z } from 'zod';
 
 // Define your configuration schema using Zod
@@ -138,7 +138,7 @@ Cardigantime exports its own version information including git commit details. Y
 #### Using Cardigantime's Version
 
 ```typescript
-import { VERSION, PROGRAM_NAME } from '@theunwalked/cardigantime';
+import { VERSION, PROGRAM_NAME } from '@utilarium/cardigantime';
 
 console.log(`Using ${PROGRAM_NAME}: ${VERSION}`);
 // Output: Using cardigantime: 0.0.22-dev.0 (working/a1b2c3d  2026-01-27 11:11:46 -0800) darwin arm64 v24.8.0
@@ -280,9 +280,37 @@ You can override automatic detection with `--config-format`:
 
 ### Configuration Sources & Precedence
 Merges configuration from multiple sources in order of precedence:
-1. **Command-line arguments** (highest priority)
+1. **MCP invocation config** (highest priority - for AI assistant tools)
 2. **Configuration file(s)** (medium priority)  
-3. **Default values** (lowest priority)
+3. **Environment variables** (low priority - system-wide defaults)
+4. **Default values** (lowest priority)
+
+### Environment Variable Configuration
+Automatic environment variable support for all configuration fields:
+
+```typescript
+// Define your schema
+const schema = z.object({
+  planDirectory: z.string(),
+  port: z.number().default(3000),
+});
+
+// Set environment variables
+process.env.MYAPP_PLAN_DIRECTORY = '/plans';
+process.env.MYAPP_PORT = '8080';
+
+// Resolve config - env vars automatically discovered
+const config = await resolveConfig({
+  schema,
+  appName: 'myapp',
+});
+```
+
+**Features:**
+- Automatic naming: `planDirectory` → `MYAPP_PLAN_DIRECTORY`
+- Type coercion: Strings parsed to numbers, booleans, arrays
+- Custom names: Map to standard env vars like `OPENAI_API_KEY`
+- Nested fields: `api.key` → `MYAPP_API_KEY`
 
 ### Multi-Format Configuration
 Supports YAML (`.yaml`, `.yml`), JSON (`.json`), JavaScript (`.js`, `.mjs`, `.cjs`), and TypeScript (`.ts`, `.mts`, `.cts`) configuration files. When multiple formats exist, Cardigantime uses automatic format detection with configurable priority.
@@ -324,7 +352,7 @@ First-class support for Model Context Protocol (MCP), enabling AI assistants to 
 - **Integration Helpers** - Simple APIs for adding MCP support to your tools
 
 ```typescript
-import { createMCPIntegration } from '@theunwalked/cardigantime/mcp';
+import { createMCPIntegration } from '@utilarium/cardigantime/mcp';
 
 const integration = createMCPIntegration({
   appName: 'myapp',
