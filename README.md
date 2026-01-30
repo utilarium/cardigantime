@@ -280,9 +280,37 @@ You can override automatic detection with `--config-format`:
 
 ### Configuration Sources & Precedence
 Merges configuration from multiple sources in order of precedence:
-1. **Command-line arguments** (highest priority)
+1. **MCP invocation config** (highest priority - for AI assistant tools)
 2. **Configuration file(s)** (medium priority)  
-3. **Default values** (lowest priority)
+3. **Environment variables** (low priority - system-wide defaults)
+4. **Default values** (lowest priority)
+
+### Environment Variable Configuration
+Automatic environment variable support for all configuration fields:
+
+```typescript
+// Define your schema
+const schema = z.object({
+  planDirectory: z.string(),
+  port: z.number().default(3000),
+});
+
+// Set environment variables
+process.env.MYAPP_PLAN_DIRECTORY = '/plans';
+process.env.MYAPP_PORT = '8080';
+
+// Resolve config - env vars automatically discovered
+const config = await resolveConfig({
+  schema,
+  appName: 'myapp',
+});
+```
+
+**Features:**
+- Automatic naming: `planDirectory` → `MYAPP_PLAN_DIRECTORY`
+- Type coercion: Strings parsed to numbers, booleans, arrays
+- Custom names: Map to standard env vars like `OPENAI_API_KEY`
+- Nested fields: `api.key` → `MYAPP_API_KEY`
 
 ### Multi-Format Configuration
 Supports YAML (`.yaml`, `.yml`), JSON (`.json`), JavaScript (`.js`, `.mjs`, `.cjs`), and TypeScript (`.ts`, `.mts`, `.cts`) configuration files. When multiple formats exist, Cardigantime uses automatic format detection with configurable priority.

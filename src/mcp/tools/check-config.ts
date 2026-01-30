@@ -172,6 +172,11 @@ function generateValueBreakdown(
         return breakdown;
     }
 
+    if (resolved.source.type === 'env') {
+        flattenConfig(sanitizedConfig, '', breakdown, 'Environment variables');
+        return breakdown;
+    }
+
     // For file configs, show the primary source
     // (detailed per-value tracking would require more complex implementation)
     const primarySource = resolved.source.filePath;

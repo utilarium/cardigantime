@@ -47,7 +47,7 @@ export interface CheckConfigInput {
 /**
  * Source type for configuration.
  */
-export type ConfigSourceType = 'mcp' | 'file' | 'defaults';
+export type ConfigSourceType = 'mcp' | 'file' | 'env' | 'defaults';
 
 /**
  * Information about a configuration value's source.

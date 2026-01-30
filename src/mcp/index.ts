@@ -11,6 +11,7 @@
 export type {
     MCPConfigSource,
     FileConfigSource,
+    EnvVarConfigSource,
     ConfigSource,
     ResolvedConfig,
     MCPInvocationContext,
@@ -37,6 +38,7 @@ export {
     explainResolution,
     isMCPConfig,
     isFileConfig,
+    isEnvConfig,
     getConfigFiles,
 } from './resolver';
 
