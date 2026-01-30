@@ -126,7 +126,7 @@ describe('parseArray', () => {
     });
 
     it('handles empty string', () => {
-        expect(parseArray('', z.string())).toEqual(['']);
+        expect(parseArray('', z.string())).toEqual([]);
     });
 
     it('handles single item', () => {

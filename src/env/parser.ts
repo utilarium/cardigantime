@@ -141,7 +141,7 @@ export function parseArray(
     // Handle empty string as empty array
     const trimmed = value.trim();
     if (trimmed === '') {
-        return [''];
+        return [];
     }
 
     const items = trimmed.split(/\s+/);
