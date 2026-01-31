@@ -24,7 +24,7 @@ const lowerPrecedenceConfig = {
     link: null,
     scopeRoots: {
         "@utilarium": "../../tobrien",
-        "@riotprompt": "../../tobrien"
+        "@kjerneverk": "../../tobrien"
     }
 };
 
