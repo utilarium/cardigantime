@@ -4,6 +4,7 @@ import { z, ZodObject } from 'zod';
 import { Args, ConfigSchema, Options } from './types';
 import * as Storage from './util/storage';
 import { loadHierarchicalConfig, DiscoveredConfigDir } from './util/hierarchical';
+import { normalizePathInput } from './util/path-normalization';
 
 /**
  * Removes undefined values from an object to create a clean configuration.
@@ -42,8 +43,12 @@ function resolveConfigPaths(
     for (const fieldPath of pathFields) {
         const value = getNestedValue(resolvedConfig, fieldPath);
         if (value !== undefined) {
+            // Step 1: Normalize input (convert file:// URLs, reject http/https)
+            const normalizedValue = normalizePathInput(value);
+            
+            // Step 2: Resolve paths relative to config directory
             const shouldResolveArrayElements = resolvePathArray.includes(fieldPath);
-            const resolvedValue = resolvePathValue(value, configDir, shouldResolveArrayElements);
+            const resolvedValue = resolvePathValue(normalizedValue, configDir, shouldResolveArrayElements);
             setNestedValue(resolvedConfig, fieldPath, resolvedValue);
         }
     }
@@ -92,7 +97,13 @@ function setNestedValue(obj: any, path: string, value: any): void {
 }
 
 /**
- * Resolves a path value (string or array of strings) relative to the config directory.
+ * Resolves a path value (string, array, or object) relative to the config directory.
+ * 
+ * Handles:
+ * - Strings: Resolved relative to configDir
+ * - Arrays: Elements resolved if resolveArrayElements is true
+ * - Objects: All string values and array elements resolved recursively
+ * - Other types: Returned unchanged
  */
 function resolvePathValue(value: any, configDir: string, resolveArrayElements: boolean): any {
     if (typeof value === 'string') {
@@ -103,6 +114,25 @@ function resolvePathValue(value: any, configDir: string, resolveArrayElements: b
         return value.map(item =>
             typeof item === 'string' ? resolveSinglePath(item, configDir) : item
         );
+    }
+
+    // NEW: Handle objects with string values
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+        const resolved: any = {};
+        for (const [key, val] of Object.entries(value)) {
+            if (typeof val === 'string') {
+                resolved[key] = resolveSinglePath(val, configDir);
+            } else if (Array.isArray(val)) {
+                // Also handle arrays within objects
+                resolved[key] = val.map(item =>
+                    typeof item === 'string' ? resolveSinglePath(item, configDir) : item
+                );
+            } else {
+                // Keep other types unchanged
+                resolved[key] = val;
+            }
+        }
+        return resolved;
     }
 
     return value;

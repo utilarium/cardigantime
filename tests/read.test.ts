@@ -1992,15 +1992,15 @@ objectValue:
             expect(config).toEqual({
                 numericValue: 42,        // Should remain unchanged (not a string)
                 booleanValue: true,      // Should remain unchanged (not a string)
-                objectValue: {           // Should remain unchanged (not a string)
-                    nested: 'content'
+                objectValue: {           // Object with string values - strings ARE resolved
+                    nested: '/project/config/content'  // String value resolved relative to config dir
                 },
                 configDirectory: configDir,
                 discoveredConfigDirs: [configDir],
                 resolvedConfigDirs: [configDir]
             });
-            // Path resolution should not be called for non-string values
-            expect(mockPathResolve).not.toHaveBeenCalled();
+            // Path resolution SHOULD be called for string values within objects
+            expect(mockPathResolve).toHaveBeenCalled();
         });
 
         test('should prevent prototype pollution via __proto__ in path resolution', async () => {

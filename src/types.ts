@@ -111,6 +111,17 @@ export interface PathResolutionOptions {
     pathFields?: string[];
     /** Array of field names whose array elements should all be resolved as paths */
     resolvePathArray?: string[];
+    /** 
+     * Whether to validate that resolved paths exist on the filesystem
+     * @default false
+     */
+    validateExists?: boolean;
+    /**
+     * Whether to warn about config values that look like paths but aren't in pathFields
+     * Looks for values containing './' or '../' that might be unresolved paths
+     * @default true
+     */
+    warnUnmarkedPaths?: boolean;
 }
 
 /**

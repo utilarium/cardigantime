@@ -10,7 +10,7 @@ Traditional configuration systems often replace entire objects when merging conf
 ```yaml
 scopeRoots:
   "@utilarium": "../../tobrien"
-  "@riotprompt": "../../tobrien"
+  "@kjerneverk": "../../tobrien"
 ```
 
 **Child config:**
@@ -30,7 +30,7 @@ Cardigantime automatically performs **deep merging**, which means nested objects
 scopeRoots:
   "@powerfuck": "../../powerfuck"        # From child config
   "@utilarium": "../../"  # From parent config  
-  "@riotprompt": "../../StJustReckoning"      # From parent config
+  "@kjerneverk": "../../StJustReckoning"      # From parent config
 ```
 
 ## How It Works
@@ -72,7 +72,7 @@ const cardigantime = create({
 link:
 scopeRoots:
   "@utilarium": "../../tobrien"
-  "@riotprompt": "../../tobrien"
+  "@kjerneverk": "../../tobrien"
 database:
   host: localhost
   port: 5432
@@ -104,7 +104,7 @@ scopeRoots:
   "@local": "./local-modules"           # From Level 0
   "@powerfuck": "../../powerfuck"       # From Level 1
   "@utilarium": "../../tobrien"  # From Level 2
-  "@riotprompt": "../../tobrien"      # From Level 2
+  "@kjerneverk": "../../tobrien"      # From Level 2
 database:
   host: localhost                       # From Level 2
   port: 5433                           # From Level 1 (overrides Level 2)
@@ -136,7 +136,7 @@ This is perfect for the MyApp scenario mentioned in your question:
 link:
 scopeRoots:
   "@utilarium": "../../tobrien"
-  "@riotprompt": "../../tobrien"
+  "@kjerneverk": "../../tobrien"
 ```
 
 **`../.kodrdriv/config.yaml`:**
@@ -152,7 +152,7 @@ link:
 scopeRoots:
   "@powerfuck": "../../powerfuck"
   "@utilarium": "../../tobrien"
-  "@riotprompt": "../../tobrien"
+  "@kjerneverk": "../../tobrien"
 ```
 
 ### Monorepo Configuration
@@ -310,7 +310,7 @@ const configs = [
   {
     scopeRoots: {
       "@utilarium": "../../tobrien",
-      "@riotprompt": "../../tobrien"
+      "@kjerneverk": "../../tobrien"
     }
   },
   // Higher precedence
