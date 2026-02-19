@@ -37,6 +37,11 @@ export function normalizePathInput(value: any): any {
  * @throws Error if string contains non-file URLs
  */
 function normalizePathString(str: string): string {
+    // Check for null bytes which could be used for path truncation attacks
+    if (str.includes('\0')) {
+        throw new Error('Path contains null bytes');
+    }
+
     // Check for non-file URLs and reject them
     if (/^https?:\/\//i.test(str)) {
         throw new Error(`Non-file URLs are not supported in path fields: ${str}`);
@@ -47,8 +52,16 @@ function normalizePathString(str: string): string {
         try {
             const url = new URL(str);
             // Decode URL-encoded characters (like %20 for spaces)
-            return decodeURIComponent(url.pathname);
-        } catch {
+            const decoded = decodeURIComponent(url.pathname);
+            // Re-check for null bytes after decoding
+            if (decoded.includes('\0')) {
+                throw new Error('Decoded path contains null bytes');
+            }
+            return decoded;
+        } catch (e) {
+            if (e instanceof Error && e.message.includes('null bytes')) {
+                throw e;
+            }
             throw new Error(`Invalid file:// URL: ${str}`);
         }
     }
