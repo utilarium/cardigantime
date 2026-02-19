@@ -48,10 +48,18 @@ export async function resolveEnvVarConfig<T extends ZodRawShape>(
             const parsedValue = parseEnvVar(readResult.value, fieldSchema);
             
             // Handle nested paths by building nested object
+            const isUnsafeKey = (key: string) => key === '__proto__' || key === 'constructor' || key === 'prototype';
+
             if (fieldPath.includes('.')) {
                 const parts = fieldPath.split('.');
+
+                // Prevent prototype pollution via dangerous property names
+                if (parts.some(isUnsafeKey)) {
+                    continue;
+                }
+
                 let current = parsedConfig;
-                
+
                 for (let i = 0; i < parts.length - 1; i++) {
                     const part = parts[i];
                     if (!(part in current)) {
@@ -59,9 +67,13 @@ export async function resolveEnvVarConfig<T extends ZodRawShape>(
                     }
                     current = current[part] as Record<string, unknown>;
                 }
-                
+
                 current[parts[parts.length - 1]] = parsedValue;
             } else {
+                // Prevent prototype pollution for top-level keys
+                if (isUnsafeKey(fieldPath)) {
+                    continue;
+                }
                 parsedConfig[fieldPath] = parsedValue;
             }
         } catch (error) {

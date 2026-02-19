@@ -120,6 +120,10 @@ function resolvePathValue(value: any, configDir: string, resolveArrayElements: b
     if (value && typeof value === 'object' && !Array.isArray(value)) {
         const resolved: any = {};
         for (const [key, val] of Object.entries(value)) {
+            // Prevent prototype pollution via dangerous property names
+            if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                continue;
+            }
             if (typeof val === 'string') {
                 resolved[key] = resolveSinglePath(val, configDir);
             } else if (Array.isArray(val)) {
