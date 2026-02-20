@@ -128,6 +128,10 @@ export function expandEnvironmentVariables(config: any): any {
     if (config !== null && typeof config === 'object') {
         const expanded: any = {};
         for (const [key, value] of Object.entries(config)) {
+            // Prevent prototype pollution via dangerous property names
+            if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+                continue;
+            }
             expanded[key] = expandEnvironmentVariables(value);
         }
         return expanded;
@@ -176,10 +180,18 @@ export function resolveConfigPaths(
 
     const resolved = Array.isArray(config) ? [...config] : { ...config };
 
+    const isUnsafeKey = (key: string) => key === '__proto__' || key === 'constructor' || key === 'prototype';
+
     for (const fieldPath of pathFields) {
         const parts = fieldPath.split('.');
+
+        // Prevent prototype pollution via dangerous property names in field paths
+        if (parts.some(isUnsafeKey)) {
+            continue;
+        }
+
         let current: any = resolved;
-        
+
         // Navigate to the parent of the target field
         for (let i = 0; i < parts.length - 1; i++) {
             if (!current[parts[i]]) {

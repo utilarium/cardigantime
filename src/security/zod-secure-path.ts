@@ -47,6 +47,15 @@ export function securePath(options: Partial<PathSecurityOptions> = {}) {
             message: `Path exceeds maximum length of ${opts.maxPathLength} characters`,
         })
         .refine(
+            (path) => !path.includes('\0'),
+            { message: 'Path contains null bytes' }
+        )
+        .refine(
+            // eslint-disable-next-line no-control-regex
+            (path) => !/[\x00-\x1f\x7f]/.test(path),
+            { message: 'Path contains control characters' }
+        )
+        .refine(
             (path) => !TRAVERSAL_PATTERNS.some(pattern => pattern.test(path)),
             { message: 'Path contains directory traversal sequences' }
         )

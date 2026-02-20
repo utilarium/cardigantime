@@ -61,9 +61,21 @@ const WINDOWS_FORBIDDEN = [
 
 /**
  * Gets platform-specific forbidden directories.
+ * Filters out any forbidden path that matches the current user's home directory,
+ * since the home directory must remain accessible for config traversal.
  */
 function getPlatformForbidden(): string[] {
-    return process.platform === 'win32' ? WINDOWS_FORBIDDEN : UNIX_FORBIDDEN;
+    const rawList = process.platform === 'win32' ? WINDOWS_FORBIDDEN : UNIX_FORBIDDEN;
+    const home = os.homedir();
+
+    // Filter out forbidden entries that would block the user's own home directory.
+    // This handles the case where a user is root (/root is in the forbidden list)
+    // or has a home directory within a system path.
+    return rawList.filter(entry => {
+        const expanded = expandEnvironmentVariables(entry);
+        const resolved = path.resolve(expanded);
+        return resolved !== home;
+    });
 }
 
 /**
@@ -97,8 +109,15 @@ export const DEFAULT_TRAVERSAL_BOUNDARY: TraversalBoundary = {
 export function expandEnvironmentVariables(pathStr: string): string {
     const home = os.homedir();
     const tmpDir = os.tmpdir();
-    const user = os.userInfo().username;
-    
+
+    // os.userInfo() can throw in some container environments
+    let user: string;
+    try {
+        user = os.userInfo().username;
+    } catch {
+        user = process.env.USER || process.env.USERNAME || 'unknown';
+    }
+
     return pathStr
         .replace(/\$HOME/g, home)
         .replace(/%HOME%/gi, home)

@@ -128,6 +128,12 @@ export const create = (params: { log?: (message: string, ...args: any[]) => void
     }
 
     const writeFile = async (path: string, data: string | Buffer, encoding: string): Promise<void> => {
+        // Validate encoding parameter to prevent unexpected behavior
+        const validEncodings = ['utf8', 'utf-8', 'ascii', 'latin1', 'base64', 'hex', 'utf16le', 'ucs2', 'ucs-2'];
+        if (!validEncodings.includes(encoding.toLowerCase())) {
+            throw new Error('Invalid encoding specified');
+        }
+
         await fs.promises.writeFile(path, data, { encoding: encoding as BufferEncoding });
     }
 
